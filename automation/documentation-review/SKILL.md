@@ -6,7 +6,8 @@ description: Review proposed documentation changes for contradictions, missing r
 # Documentation review
 
 Follow the project's [development strategy](../../docs/development-workflow.md).
-This skill defines the review procedure; GitHub invocation is not yet configured.
+This skill defines the review procedure. See the
+[local GitHub integration](README.md) for invocation policy and setup status.
 
 ## Establish the proposal and its context
 
