@@ -1,0 +1,32 @@
+name: Local documentation review
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+jobs:
+  review:
+    if: >-
+      github.event.repository.private &&
+      github.event.issue.pull_request &&
+      github.event.comment.user.type == 'User' &&
+      startsWith(github.event.comment.body, '/review-docs')
+    runs-on: [self-hosted, macOS, obsidian-recall]
+    timeout-minutes: 15
+    steps:
+      # issue_comment uses the default branch. Never execute the PR's checkout.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Review the proposal with local Codex
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const review = require('./automation/documentation-review/review.cjs');
+            await review.run({ github, context, core });

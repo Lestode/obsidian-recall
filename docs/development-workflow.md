@@ -49,6 +49,8 @@ revisions to that branch and merge after acceptance. Begin with one consistency
 and redundancy reviewer using the
 [documentation review skill](../automation/documentation-review/SKILL.md).
 Improve it using examples of useful findings, missed conflicts, and false alarms.
+The [local GitHub integration](../automation/documentation-review/README.md)
+describes the PR interface, subscription-backed execution, and setup status.
 
 Implementation follows the agreed specification within the scope authorized by
 the user. Approval of documentation does not by itself authorize implementation,

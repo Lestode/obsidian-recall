@@ -13,7 +13,7 @@
   "scripts": {
     "build": "npm run build --workspace @recall/obsidian-plugin && npm run build --workspace @recall/review-web && npm run build --workspace @recall/local-service",
     "start": "npx --yes node@22 apps/local-service/dist/cli.mjs",
-    "test": "npx --yes node@22 ./node_modules/tsx/dist/cli.mjs --test apps/obsidian-plugin/tests/*.test.ts packages/core/tests/*.test.ts packages/database/tests/*.test.ts apps/local-service/tests/*.test.ts",
+    "test": "npx --yes node@22 ./node_modules/tsx/dist/cli.mjs --test apps/obsidian-plugin/tests/*.test.ts packages/core/tests/*.test.ts packages/database/tests/*.test.ts apps/local-service/tests/*.test.ts automation/*/*.test.cjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
