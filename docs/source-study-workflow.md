@@ -162,9 +162,30 @@ content policy.
 
 ## Suggested delivery sequence
 
-1. Define the source preparation instructions using the question-writing
-   guidance. Validate a small sample for standalone meaning, fidelity, source
-   coverage, and compatibility with the existing parser before scaling up.
+### First milestone proposed for review: source preparation
+
+The first deliverable is one preparation workflow from an agreed PDF or website
+scope to Recall Markdown ready for a collection. It should remove the separate
+step of generating a list and manually converting that list into questions.
+This is a feature proposal; no source reader, generation skill, or export
+integration has been implemented or selected yet.
+
+Acceptance of this milestone would require:
+
+1. A small representative sample whose coverage and depth the user validates
+   before generation extends to the full agreed scope.
+2. Generated notes that satisfy the [required content checks](#required-question-content-checks)
+   and existing Markdown grammar, including titles, answers, and source
+   references, with identity generated and validated automatically.
+3. Explicit human decisions on destination handling, identity integration, and
+   regeneration before implementation commits to them. These remain open;
+   preparing a sample does not authorize overwriting an existing collection.
+
+Preparation does not confirm that the user has studied the generated material.
+It must remain usable before study tracking or a review platform is available.
+
+### Subsequent milestones
+
 2. Agree the remaining persistence and interface decisions, then add durable
    per-question study state and the Enter/click interaction. This milestone
    stores what has been studied without requiring a review platform.
