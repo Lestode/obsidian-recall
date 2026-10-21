@@ -13,6 +13,7 @@ class IncompleteReview extends Error {}
 function formatResponse({ marker, response, revision }) {
   return `${marker}\n## 🤖 ${identity.name}\n\n` +
     `**Automated agent · ${identity.engine} · ${identity.execution} execution**\n\n` +
+    `**Model:** ${identity.model} · **Reasoning effort:** ${identity.reasoningEffort}\n\n` +
     `**Purpose:** ${identity.purpose}\n\n---\n\n${response}\n\n` +
     `_[Proposal revision](${revision}). Later pushes require a new request._`;
 }
@@ -32,6 +33,35 @@ function codexEnvironment(source) {
   return result;
 }
 
+function codexArguments(directory, output) {
+  const args = [
+    'exec', '--ignore-user-config', '--ignore-rules', '--ephemeral',
+    '--model', identity.model, '-c', `model_reasoning_effort=${JSON.stringify(identity.reasoningEffort)}`,
+    '--sandbox', 'read-only', '--skip-git-repo-check', '--cd', directory,
+    '-c', 'web_search="disabled"', '--enable', 'skip_host_skill_discovery',
+  ];
+  for (const feature of [
+    'shell_tool', 'unified_exec', 'apps', 'plugins', 'remote_plugin',
+    'multi_agent', 'browser_use', 'computer_use', 'in_app_browser',
+    'hooks', 'skill_search', 'code_mode_host', 'image_generation', 'view_image',
+  ]) args.push('--disable', feature);
+  args.push('--output-last-message', output, '-');
+  return args;
+}
+
+function publicationFailureDetail(error) {
+  if (Number.isInteger(error?.status) && error.status >= 100 && error.status <= 599) {
+    return ` (HTTP ${error.status})`;
+  }
+  if (['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EPIPE'].includes(error?.code)) {
+    return ` (${error.code})`;
+  }
+  if (['TypeError', 'ReferenceError', 'SyntaxError', 'RangeError'].includes(error?.name)) {
+    return ` (${error.name})`;
+  }
+  return '';
+}
+
 async function runCodex(prompt) {
   const directory = await mkdtemp(join(tmpdir(), 'recall-review-'));
   const binary = process.env.REVIEW_CODEX_BIN || 'codex';
@@ -42,17 +72,7 @@ async function runCodex(prompt) {
       throw new IncompleteReview('Codex requires local ChatGPT subscription sign-in.');
     }
     const output = join(directory, 'response.md');
-    const args = [
-      'exec', '--ignore-user-config', '--ignore-rules', '--ephemeral',
-      '--sandbox', 'read-only', '--skip-git-repo-check', '--cd', directory,
-      '-c', 'web_search="disabled"', '--enable', 'skip_host_skill_discovery',
-    ];
-    for (const feature of [
-      'shell_tool', 'unified_exec', 'apps', 'plugins', 'remote_plugin',
-      'multi_agent', 'browser_use', 'computer_use', 'in_app_browser',
-      'hooks', 'skill_search', 'code_mode_host', 'image_generation', 'view_image',
-    ]) args.push('--disable', feature);
-    args.push('--output-last-message', output, '-');
+    const args = codexArguments(directory, output);
     await new Promise((resolve, reject) => {
       const child = execFile(binary, args, {
         env, cwd: directory, timeout: 10 * 60_000, maxBuffer: 1_000_000,
@@ -180,16 +200,25 @@ async function run({ github, context, core, review = runCodex }) {
     response = `Review incomplete. ${error instanceof IncompleteReview ? error.message : 'Source retrieval or local execution failed; check the Actions job.'}`;
   }
   const revision = `https://github.com/${repo.owner}/${repo.repo}/pull/${number}${pull ? `/files/${pull.head.sha}` : ''}`;
+  const body = formatResponse({ marker, response, revision });
+  let summarySaved = false;
+  try {
+    await core.summary.addRaw(body).write();
+    summarySaved = true;
+  } catch {
+    core.warning('Could not save the review to the Actions job summary.');
+  }
   try {
     await github.rest.issues.createComment({
       ...repo, issue_number: number,
-      body: formatResponse({ marker, response, revision }),
+      body,
     });
-  } catch {
-    core.setFailed('Review incomplete: GitHub could not accept the PR response.');
+  } catch (error) {
+    core.setFailed(`Review incomplete: GitHub could not accept the PR response${publicationFailureDetail(error)}. ` +
+      (summarySaved ? 'The report is available in the Actions job summary.' : 'The report could not be saved to the job summary.'));
     return;
   }
   if (failed) core.setFailed('Documentation review was incomplete; see the PR response.');
 }
 
-module.exports = { run, runCodex, collectContext, parseCommand, codexEnvironment, formatResponse };
+module.exports = { run, runCodex, collectContext, parseCommand, codexEnvironment, codexArguments, formatResponse };

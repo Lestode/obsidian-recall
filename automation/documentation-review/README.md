@@ -1,8 +1,10 @@
 # Local documentation review through GitHub
 
-Status: the private repository is published and its Mac runner is online. A
-bootstrap review ran locally. The workflow awaits merge; the full PR-triggered
-path remains unverified.
+Status: the Mac runner receives automatic PR jobs. The first automatic attempt
+failed while publishing its response with HTTP 403. The original handler hid
+that status. This update uses explicit PR-write permission, preserves the
+report, and exposes safe failure details. Successful automatic comment
+publication remains unverified until this update is merged and exercised.
 
 GitHub holds the PR and its discussion. A self-hosted GitHub Actions runner on
 the user's Mac runs Codex with ChatGPT subscription authentication, then returns
@@ -15,6 +17,11 @@ header independently of the model's answer. Activated workflow responses use
 GitHub's Actions bot account. A bootstrap report posted through a personal
 account must disclose that publication method and identify the content as
 agent-generated.
+
+The approved reviewer configuration is GPT-6.1 Sol with **high** reasoning
+effort, pinned in the identity metadata and passed explicitly to Codex. Reports
+show these settings alongside the agent's purpose. The pin takes effect after
+this reviewer update is merged into the default branch.
 
 ```mermaid
 flowchart LR
@@ -56,6 +63,10 @@ repository. Subscription authentication and model use are distinct from GitHub
 repository access. A future Claude adapter could use the same PR interface;
 the first adapter uses Codex.
 
+The workflow's GitHub token has content-read and PR-write access so the harness
+can publish PR comments. It is not passed to Codex. Issue-write access is not
+needed. The workflow does not grant content-write access or authorize merging.
+
 The runner must be online to accept work. Jobs wait when the Mac is asleep or
 offline. Review scope and failures must be visible, rather than reported as a
 successful clean review.
@@ -82,6 +93,10 @@ input. It runs in a temporary directory with a read-only sandbox, tool access
 disabled, and no inherited GitHub or API billing credentials. One registered
 runner serializes jobs. A rerun of the same comment does not duplicate its reply.
 Large or incomplete inputs produce an explicit incomplete result.
+The formatted report is saved to the Actions job summary before publication,
+so a posting failure does not discard the review. Publication errors expose
+only a numeric HTTP status or a recognized local error category; request
+headers, tokens, raw API responses, and subprocess output are not logged.
 Failures before authorization, checkout, or a successful PR response remain
 visible in Actions. A cancelled job or runner outage cannot guarantee a comment.
 
