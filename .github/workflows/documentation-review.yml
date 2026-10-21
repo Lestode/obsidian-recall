@@ -1,6 +1,8 @@
 name: Local documentation review
 
 on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
   issue_comment:
     types: [created]
 
@@ -13,13 +15,15 @@ jobs:
   review:
     if: >-
       github.event.repository.private &&
-      github.event.issue.pull_request &&
-      github.event.comment.user.type == 'User' &&
-      startsWith(github.event.comment.body, '/review-docs')
+      ((github.event_name == 'pull_request_target' &&
+        github.event.pull_request.user.type == 'User') ||
+       (github.event.issue.pull_request &&
+        github.event.comment.user.type == 'User' &&
+        startsWith(github.event.comment.body, '/review-docs')))
     runs-on: [self-hosted, macOS, obsidian-recall]
     timeout-minutes: 15
     steps:
-      # issue_comment uses the default branch. Never execute the PR's checkout.
+      # Both triggers use the base/default branch. Never execute the PR checkout.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.sha }}

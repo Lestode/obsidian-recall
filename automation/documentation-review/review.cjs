@@ -127,21 +127,25 @@ async function collectContext({ github, repo, pull, question, comments }) {
 
 async function run({ github, context, core, review = runCodex }) {
   const { payload } = context;
-  const question = parseCommand(payload.comment?.body);
-  if (payload.action !== 'created' || !payload.repository.private ||
-      !payload.issue?.pull_request || payload.comment?.user?.type !== 'User' || question === null) return;
+  const automatic = context.eventName === 'pull_request_target' &&
+    ['opened', 'reopened', 'ready_for_review'].includes(payload.action);
+  const question = automatic ? '' : parseCommand(payload.comment?.body);
+  const author = automatic ? payload.pull_request?.user : payload.comment?.user;
+  if (!payload.repository.private || author?.type !== 'User' || question === null ||
+      (!automatic && (payload.action !== 'created' || !payload.issue?.pull_request))) return;
   const repo = context.repo;
   const permission = await github.rest.repos.getCollaboratorPermissionLevel({
-    ...repo, username: payload.comment.user.login,
+    ...repo, username: author.login,
   });
   if (!['admin', 'maintain', 'write'].includes(permission.data.permission)) return;
-  const number = payload.issue.number;
+  const number = automatic ? payload.pull_request.number : payload.issue.number;
   const { data: pull } = await github.rest.pulls.get({ ...repo, pull_number: number });
   if (pull.state !== 'open') return;
   const comments = await github.paginate(github.rest.issues.listComments, {
     ...repo, issue_number: number, per_page: 100,
   });
-  const marker = `<!-- recall-documentation-review:${payload.comment.id} -->`;
+  const requestId = automatic ? `pr-${number}-${pull.head.sha}` : payload.comment.id;
+  const marker = `<!-- recall-documentation-review:${requestId} -->`;
   if (comments.some(comment => comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker))) return;
   let failed = false;
   let response;

@@ -108,6 +108,39 @@ test('rerunning the same request preserves its existing response', async () => {
   assert.equal(f.calls.responses.length, 0);
 });
 
+test('opening a PR automatically reviews it without a command comment', async () => {
+  const f = fixture();
+  f.context.eventName = 'pull_request_target';
+  f.context.payload.action = 'opened';
+  f.context.payload.pull_request = { number: 7, user: { login: 'author', type: 'User' } };
+  delete f.context.payload.comment;
+  delete f.context.payload.issue;
+  await run(f);
+  assert.equal(f.calls.reviews.length, 1);
+  assert.match(f.calls.responses[0].body, /recall-documentation-review:pr-7-proposed/);
+});
+
+test('automatic review rejects an author without write access', async () => {
+  const f = fixture();
+  f.context.eventName = 'pull_request_target';
+  f.context.payload.action = 'opened';
+  f.context.payload.pull_request = { number: 7, user: { login: 'reader', type: 'User' } };
+  f.github.rest.repos.getCollaboratorPermissionLevel = async () => ({ data: { permission: 'read' } });
+  await run(f);
+  assert.equal(f.calls.reviews.length, 0);
+  assert.equal(f.calls.responses.length, 0);
+});
+
+test('reopening a previously reviewed revision does not duplicate its automatic response', async () => {
+  const f = fixture();
+  f.context.eventName = 'pull_request_target';
+  f.context.payload.action = 'reopened';
+  f.context.payload.pull_request = { number: 7, user: { login: 'author', type: 'User' } };
+  f.comments.push({ body: '<!-- recall-documentation-review:pr-7-proposed -->', user: { login: 'github-actions[bot]' } });
+  await run(f);
+  assert.equal(f.calls.reviews.length, 0);
+});
+
 test('a missing Markdown diff produces a visible incomplete result, never a clean review', async () => {
   const f = fixture();
   delete f.files[0].patch;

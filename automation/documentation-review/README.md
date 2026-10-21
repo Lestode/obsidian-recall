@@ -18,11 +18,23 @@ flowchart LR
 
 ## Using the loop
 
-Comment `/review-docs` on an open PR to request a review. Include a question
-after the command for a follow-up, such as `/review-docs explain the second
-finding`. Each request reads the current proposal and prior discussion and
-produces one response. Publishing changed files requires a commit and push;
-discussion does not. The workflow does not run on every push.
+The [loop policy convention](../README.md) applies. This loop's policy is:
+
+| Event or limit | Behavior |
+|---|---|
+| New PR | Review automatically when opened by a human collaborator with write access |
+| Reopened or ready for review | Review if this revision has not already received an automatic response |
+| Comment beginning `/review-docs` | Review or answer the supplied follow-up question |
+| Push or commit | No automatic run; request another review when useful |
+| Public repository, bot, or user without write access | Do not run |
+| Input and runtime | At most 100 changed files, 100 Markdown documents per revision, 240 KB of context, and ten minutes for Codex |
+| Limit exceeded or execution failure | Return an incomplete result; do not claim a clean review |
+
+Comment `/review-docs` on an open PR to request another review or continue the
+discussion, such as `/review-docs explain the second finding`. Each request
+reads the current proposal and prior discussion and produces one response.
+Publishing changed files requires a commit and push; discussion does not.
+Discussion does not require a new commit.
 
 The first loop reviews and proposes corrections. It does not edit files or
 merge. Only repository collaborators with write access may invoke it. Keep the
@@ -49,10 +61,11 @@ successful clean review.
    otherwise the local account's `.codex` directory is used. Sign in with ChatGPT.
    The implementation requires the CLI's `--ignore-user-config` and
    `--ignore-rules` options; verify these when upgrading Codex.
-3. Merge the approved workflow into the default branch. GitHub's `issue_comment`
-   trigger reads that branch, so the setup PR alone does not activate it.
-4. Request `/review-docs` on a PR and verify one response plus a completed Actions
-   job. Reply with another command to continue the discussion.
+3. Merge the approved workflow into the default branch. The comment and PR
+   triggers execute that branch, so the setup PR alone does not activate them.
+4. Open a PR and verify one response plus a completed Actions job. Reply with
+   `/review-docs` and a question to continue the discussion. PRs already open
+   before activation need an explicit request or reopening.
 
 The runner executes the accepted workflow, never code checked out from the PR.
 Codex receives bounded Markdown snapshots, available diffs, and discussion as
