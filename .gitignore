@@ -1,0 +1,10 @@
+node_modules/
+dist/
+apps/obsidian-plugin/main.js
+apps/review-web/app.js
+apps/review-web/app.js.map
+*.map
+.DS_Store
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

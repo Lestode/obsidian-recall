@@ -1,0 +1,15 @@
+{
+  "name": "@recall/review-web",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.mjs"
+  },
+  "dependencies": {
+    "dompurify": "^3.2.7",
+    "marked": "^16.0.0",
+    "marked-katex-extension": "^5.1.4",
+    "katex": "^0.16.22"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "id": "obsidian-recall",
+  "name": "Obsidian Recall",
+  "version": "0.2.0",
+  "minAppVersion": "1.5.0",
+  "description": "Author structured active-recall questions in ordinary Markdown.",
+  "author": "Louis",
+  "isDesktopOnly": false
+}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Obsidian Recall</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">OBSIDIAN RECALL</p>
+        <h1>Collection inspector</h1>
+      </div>
+      <div class="sync-state" id="sync-state">Connecting…</div>
+    </header>
+    <main>
+      <aside>
+        <div class="aside-heading">
+          <h2>Collections</h2>
+          <span id="revision"></span>
+        </div>
+        <nav id="collections" aria-label="Recall collections"></nav>
+      </aside>
+      <section class="library">
+        <div class="toolbar">
+          <div>
+            <p class="eyebrow" id="scope-label">ALL QUESTIONS</p>
+            <h2 id="scope-title">Library</h2>
+          </div>
+          <div class="toolbar-actions">
+            <label class="toggle"><input id="include-archived" type="checkbox"> Show archived</label>
+            <button id="rescan" class="rescan" type="button">Rescan vault</button>
+            <input id="search" type="search" placeholder="Search questions and answers">
+          </div>
+        </div>
+        <div id="diagnostic" class="diagnostic" hidden></div>
+        <div id="questions" class="questions"></div>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

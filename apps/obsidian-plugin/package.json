@@ -1,0 +1,17 @@
+{
+  "name": "@recall/obsidian-plugin",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit --skipLibCheck && node esbuild.config.mjs production"
+  },
+  "dependencies": {
+    "@recall/core": "0.2.0"
+  },
+  "devDependencies": {
+    "@codemirror/state": "6.5.0",
+    "@codemirror/view": "6.38.6",
+    "obsidian": "latest"
+  }
+}

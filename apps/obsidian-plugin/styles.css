@@ -1,0 +1,19 @@
+.cm-line.recall-identity-line {
+  display: none;
+}
+
+.recall-identity-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 0.55em;
+  padding: 0.05em 0.45em;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  font-size: var(--font-smallest);
+  font-weight: var(--font-medium);
+  line-height: 1.45;
+  vertical-align: 0.08em;
+  user-select: none;
+}
