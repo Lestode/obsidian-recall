@@ -7,6 +7,8 @@ purpose and division of responsibility.
 Each loop must declare:
 
 - Its review scope and authoritative instructions.
+- A visible agent name and purpose on every published response. Identify the
+  engine and execution context; the posting account alone is not agent identity.
 - Automatic events, eligible users, manual invocation, and events it skips.
 - Input and runtime limits, and what happens when a check cannot finish.
 - Where its result appears and how follow-up requests work.

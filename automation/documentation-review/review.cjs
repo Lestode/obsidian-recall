@@ -3,11 +3,19 @@ const { promisify } = require('node:util');
 const { mkdtemp, readFile, rm } = require('node:fs/promises');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
+const identity = require('./identity.json');
 
 const execute = promisify(execFile);
 const MAX_CONTEXT_BYTES = 240_000;
 const MAX_FILES = 100;
 class IncompleteReview extends Error {}
+
+function formatResponse({ marker, response, revision }) {
+  return `${marker}\n## 🤖 ${identity.name}\n\n` +
+    `**Automated agent · ${identity.engine} · ${identity.execution} execution**\n\n` +
+    `**Purpose:** ${identity.purpose}\n\n---\n\n${response}\n\n` +
+    `_[Proposal revision](${revision}). Later pushes require a new request._`;
+}
 
 function parseCommand(body) {
   const match = /^\/review-docs(?:[\t ]+|\r?\n|$)([\s\S]*)$/.exec(body || '');
@@ -175,7 +183,7 @@ async function run({ github, context, core, review = runCodex }) {
   try {
     await github.rest.issues.createComment({
       ...repo, issue_number: number,
-      body: `${marker}\n${response}\n\n_Local Codex review · [proposal revision](${revision}). Later pushes require a new request._`,
+      body: formatResponse({ marker, response, revision }),
     });
   } catch {
     core.setFailed('Review incomplete: GitHub could not accept the PR response.');
@@ -184,4 +192,4 @@ async function run({ github, context, core, review = runCodex }) {
   if (failed) core.setFailed('Documentation review was incomplete; see the PR response.');
 }
 
-module.exports = { run, runCodex, collectContext, parseCommand, codexEnvironment };
+module.exports = { run, runCodex, collectContext, parseCommand, codexEnvironment, formatResponse };

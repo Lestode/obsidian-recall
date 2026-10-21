@@ -1,0 +1,6 @@
+{
+  "name": "Documentation reviewer",
+  "purpose": "Check proposed changes against project intent and rules, and identify contradictions, missing requirements, and harmful duplication.",
+  "engine": "Codex",
+  "execution": "local"
+}

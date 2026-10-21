@@ -9,6 +9,13 @@ the user's Mac runs Codex with ChatGPT subscription authentication, then returns
 the review to the PR. The agent process is local; model inference uses OpenAI.
 The [review skill](SKILL.md) defines what to check and how to report findings.
 
+Every response begins with an explicit automated-agent label, the reviewer's
+name, purpose, and engine. Its [identity metadata](identity.json) supplies this
+header independently of the model's answer. Activated workflow responses use
+GitHub's Actions bot account. A bootstrap report posted through a personal
+account must disclose that publication method and identify the content as
+agent-generated.
+
 ```mermaid
 flowchart LR
     A[PR comment requesting review] --> B[GitHub Actions dispatch]

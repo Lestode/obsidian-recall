@@ -79,6 +79,9 @@ test('a follow-up reviews both immutable revisions and prior PR discussion, then
   }
   assert.equal(f.calls.responses.length, 1);
   assert.match(f.calls.responses[0].body, /A concrete finding/);
+  assert.match(f.calls.responses[0].body, /## 🤖 Documentation reviewer/);
+  assert.match(f.calls.responses[0].body, /Automated agent · Codex · local execution/);
+  assert.match(f.calls.responses[0].body, /\*\*Purpose:\*\*/);
   assert.match(f.calls.responses[0].body, /recall-documentation-review:42/);
   assert.match(f.calls.responses[0].body, /files\/proposed/);
   assert.deepEqual(f.calls.failures, []);
@@ -147,6 +150,7 @@ test('a missing Markdown diff produces a visible incomplete result, never a clea
   await run(f);
   assert.equal(f.calls.reviews.length, 0);
   assert.match(f.calls.responses[0].body, /Review incomplete/);
+  assert.match(f.calls.responses[0].body, /Automated agent · Codex · local execution/);
   assert.equal(f.calls.failures.length, 1);
 });
 
