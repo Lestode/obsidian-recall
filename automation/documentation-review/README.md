@@ -1,7 +1,8 @@
 # Local documentation review through GitHub
 
-Status: the private repository is published. Integration is being prepared on a
-branch; runner registration and an end-to-end review remain to be verified.
+Status: the private repository is published and its Mac runner is online. A
+bootstrap review ran locally. The workflow awaits merge; the full PR-triggered
+path remains unverified.
 
 GitHub holds the PR and its discussion. A self-hosted GitHub Actions runner on
 the user's Mac runs Codex with ChatGPT subscription authentication, then returns
@@ -28,7 +29,7 @@ The [loop policy convention](../README.md) applies. This loop's policy is:
 | Push or commit | No automatic run; request another review when useful |
 | Public repository, bot, or user without write access | Do not run |
 | Input and runtime | At most 100 changed files, 100 Markdown documents per revision, 240 KB of context, and ten minutes for Codex |
-| Limit exceeded or execution failure | Return an incomplete result; do not claim a clean review |
+| Limit exceeded or execution failure | Report an incomplete result; use the Actions job as fallback if authorization or posting is unavailable |
 
 Comment `/review-docs` on an open PR to request another review or continue the
 discussion, such as `/review-docs explain the second finding`. Each request
@@ -67,12 +68,15 @@ successful clean review.
    `/review-docs` and a question to continue the discussion. PRs already open
    before activation need an explicit request or reopening.
 
-The runner executes the accepted workflow, never code checked out from the PR.
+The workflow resolves an immutable default-branch SHA for the reviewer, even
+when the PR targets another branch. It never executes the PR's proposed code.
 Codex receives bounded Markdown snapshots, available diffs, and discussion as
 input. It runs in a temporary directory with a read-only sandbox, tool access
 disabled, and no inherited GitHub or API billing credentials. One registered
 runner serializes jobs. A rerun of the same comment does not duplicate its reply.
 Large or incomplete inputs produce an explicit incomplete result.
+Failures before authorization, checkout, or a successful PR response remain
+visible in Actions. A cancelled job or runner outage cannot guarantee a comment.
 
 Official setup references:
 

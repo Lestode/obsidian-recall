@@ -23,10 +23,19 @@ jobs:
     runs-on: [self-hosted, macOS, obsidian-recall]
     timeout-minutes: 15
     steps:
-      # Both triggers use the base/default branch. Never execute the PR checkout.
+      - name: Resolve the accepted reviewer revision
+        id: reviewer
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.getBranch({
+              ...context.repo, branch: context.payload.repository.default_branch,
+            });
+            core.setOutput('sha', data.commit.sha);
+      # Always use the default-branch reviewer, including PRs targeting other bases.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ steps.reviewer.outputs.sha }}
           persist-credentials: false
       - name: Review the proposal with local Codex
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7

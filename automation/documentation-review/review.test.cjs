@@ -163,3 +163,36 @@ test('truncated source retrieval does not reach the model', async () => {
   assert.equal(f.calls.reviews.length, 0);
   assert.match(f.calls.responses[0].body, /Review incomplete/);
 });
+
+test('initial discussion retrieval failure produces a controlled incomplete response', async () => {
+  const f = fixture();
+  const paginate = f.github.paginate;
+  f.github.paginate = async method => {
+    if (method === 'comments') throw new Error('Remote error containing private diagnostic data');
+    return paginate(method);
+  };
+  await run(f);
+  assert.equal(f.calls.reviews.length, 0);
+  assert.equal(f.calls.responses.length, 1);
+  assert.match(f.calls.responses[0].body, /Review incomplete/);
+  assert.doesNotMatch(f.calls.responses[0].body, /private diagnostic/);
+  assert.equal(f.calls.failures.length, 1);
+});
+
+test('unverifiable authorization fails in Actions without starting an agent or posting', async () => {
+  const f = fixture();
+  f.github.rest.repos.getCollaboratorPermissionLevel = async () => { throw new Error('Unavailable'); };
+  await run(f);
+  assert.equal(f.calls.reviews.length, 0);
+  assert.equal(f.calls.responses.length, 0);
+  assert.equal(f.calls.failures.length, 1);
+});
+
+test('posting failure falls back to a failed Actions job', async () => {
+  const f = fixture();
+  f.github.rest.issues.createComment = async () => { throw new Error('Unavailable'); };
+  await run(f);
+  assert.equal(f.calls.reviews.length, 1);
+  assert.equal(f.calls.failures.length, 1);
+  assert.match(f.calls.failures[0], /could not accept/);
+});
