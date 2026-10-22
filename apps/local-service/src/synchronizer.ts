@@ -3,7 +3,7 @@ import { watch, type FSWatcher } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import type { RecallDatabase } from "@recall/database";
-import { markerRoot, RECALL_MARKER_FILE } from "@recall/core";
+import { markerRoot, nearestRecallRoot, RECALL_MARKER_FILE } from "@recall/core";
 import { scanChangedFiles, scanVault, type ScanDiagnostic } from "./scanner";
 
 export interface SyncEvent {
@@ -66,6 +66,24 @@ export class RecallSynchronizer extends EventEmitter {
   requestFullReconcile(): void {
     this.forceFull = true;
     this.schedule();
+  }
+
+  /** Confirm the whole current note, including added/removed and invalid questions. */
+  async studyFileSynchronized(filePath: string): Promise<boolean> {
+    if (path.posix.isAbsolute(filePath) || filePath.includes("\\") ||
+        filePath.split("/").some(part => part === ".." || part === "." || !part) ||
+        !filePath.toLowerCase().endsWith(".md") || this.diagnosticsByFile.has(filePath)) return false;
+    const root = nearestRecallRoot(filePath, this.markerPaths);
+    if (root === null) return false;
+    const marker = root ? `${root}/${RECALL_MARKER_FILE}` : RECALL_MARKER_FILE;
+    try {
+      if (!(await stat(path.join(this.vaultPath, marker))).isFile()) return false;
+      const scan = await scanChangedFiles(this.vaultPath, [filePath], this.markerPaths, this.database);
+      if (scan.diagnostics.length || !scan.filePaths.includes(filePath)) return false;
+      const indexed = this.database.listQuestions({ filePaths: [filePath] });
+      const hashes = new Map(indexed.map(question => [question.id, question.contentHash]));
+      return scan.records.length === indexed.length && scan.records.every(record => hashes.get(record.id) === record.contentHash);
+    } catch { return false; }
   }
 
   async canStudy(filePath: string, id: string, contentHash: string): Promise<boolean> {

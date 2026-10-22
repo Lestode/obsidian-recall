@@ -13,6 +13,7 @@ import { convertNumberedQuestions } from "./import-questions";
 import { StudyClient, loopbackServiceUrl } from "./study-client";
 import { studyEditorExtension } from "./study-editor";
 import { addReadingStudyControls } from "./study-reading";
+import { registerNoteProgressViews } from "./note-progress-views";
 import {
   importPrefixForContext,
   questionPrefixForBlankLine,
@@ -44,6 +45,7 @@ export default class ObsidianRecallPlugin extends Plugin {
       } finally { if (timer !== undefined) window.clearTimeout(timer); }
     });
     this.registerInterval(window.setInterval(() => void study.refreshVisible(), 3000));
+    registerNoteProgressViews(this, study, file => file.extension === "md" && file.name !== RECALL_MARKER_FILE && this.isInsideRecallRoot(file));
     this.registerEditorExtension(studyEditorExtension(study, file => nearestRecallRoot(file, this.markerPaths()) !== null));
     this.registerMarkdownPostProcessor((el, context) => {
       if (nearestRecallRoot(context.sourcePath, this.markerPaths()) !== null) addReadingStudyControls(el, context, study);

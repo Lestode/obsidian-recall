@@ -122,5 +122,7 @@ other note text retains its editing behavior.
 
 The local companion service must be running for this vault; its address is set
 in the plugin's **Study companion service** setting. No progress syntax is
-written into Markdown. See [source study](source-study-workflow.md) for
-persistence, offline behavior, and backup.
+written into Markdown. Note progress also appears beside its name in the file
+list and beside its open title: a studied/total count, or **✓ Completed** when
+all its questions are studied. See [source study](source-study-workflow.md) for
+completion rules, persistence, offline behavior, and backup.

@@ -5,7 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { promisify } = require('node:util');
 const { execFile } = require('node:child_process');
-const { renderSourceNote, writeSourceNote } = require('./prepare.ts');
+const { renderSourceNote, writeSourceNote, renderSourceNotes, writeSourceNotes, appendSourceNotes } = require('./prepare.ts');
 const { parseRecallQuestions } = require('../../packages/core/src/grammar.ts');
 const { scanVault } = require('../../apps/local-service/src/scanner.ts');
 
@@ -189,4 +189,162 @@ test('the CLI previews without writing, then creates the pilot note in one publi
   assert.equal(result.questionCount, 5);
   assert.equal((await scanVault(root)).records.length, 5);
   await assert.rejects(run(process.execPath, [...cli, '--draft', draftPath, '--parent', parent]), /Ask whether/);
+});
+
+function bookDraft() {
+  const input = draft();
+  return { source: { ...input.source, scope: 'All chapters and appendices' }, notes: [
+    { title: 'Introduction', scope: 'Chapter 1', sections: input.sections },
+    { title: 'Second chapter', sections: input.sections },
+    { title: 'Notation', path: 'Appendices/01 Notation.md', sections: input.sections },
+  ] };
+}
+
+test('one book run creates ordered chapter notes and appendices with independent fresh identities', async t => {
+  const { root, parent } = await fixture(t);
+  const input = bookDraft();
+  const result = await writeSourceNotes(input, parent, 'none');
+  assert.equal(result.questionCount, 3);
+  assert.deepEqual(result.notes.map(note => path.relative(result.folderPath, note.filePath)), [
+    '01 Introduction.md', '02 Second chapter.md', 'Appendices/01 Notation.md',
+  ]);
+  const scan = await scanVault(root);
+  assert.deepEqual(scan.diagnostics, []);
+  assert.equal(scan.records.length, 3);
+  assert.equal(new Set(scan.records.map(record => record.id)).size, 3);
+  const original = await readFile(result.notes[0].filePath, 'utf8');
+  assert.match(original, /Scope: Chapter 1/);
+  assert.match(await readFile(result.notes[1].filePath, 'utf8'), /Scope: All chapters and appendices/);
+  await assert.rejects(writeSourceNotes(input, parent, 'none'), /Ask the user/);
+  const copy = await writeSourceNotes(input, parent, 'confirmed-new-copy');
+  assert.match(copy.folderPath, /A source \(2\)$/);
+  assert.equal(await readFile(result.notes[0].filePath, 'utf8'), original);
+  assert.equal(new Set((await scanVault(root)).records.map(record => record.id)).size, 6);
+});
+
+test('every chapter is validated before the source folder is created', async t => {
+  const { parent } = await fixture(t);
+  const input = bookDraft();
+  input.notes[2].sections = [{ title: 'Broken', questions: [{
+    ...draft().sections[0].questions[0], answer: 'Answer.\n\n## Unexpected boundary\n\nLost content.',
+  }] }];
+  await assert.rejects(writeSourceNotes(input, parent, 'none'), /boundaries/);
+  assert.deepEqual(await readdir(parent), []);
+});
+
+test('book note paths reject traversal, reserved files, collisions and ambiguous draft formats', () => {
+  for (const notePath of ['../escape.md', '/absolute.md', 'chapter\\escape.md', '.hidden/note.md', '_recall.md', 'node_modules/note.md', 'Chapter/../note.md']) {
+    const input = bookDraft();
+    input.notes[0].path = notePath;
+    assert.throws(() => renderSourceNotes(input));
+  }
+  for (const paths of [
+    ['Chapter.md', 'chapter.md'], ['Chapter.md', 'chapter.md/section.md'],
+    ['Café.md', 'Cafe\u0301.md'], ['Appendices/a.md', 'appendices/b.md'],
+  ]) {
+    const input = bookDraft();
+    input.notes[0].path = paths[0]; input.notes[1].path = paths[1];
+    assert.throws(() => renderSourceNotes(input), /paths/);
+  }
+  assert.throws(() => renderSourceNotes({ ...bookDraft(), title: 'Ambiguous' }), /mix/);
+  assert.throws(() => renderSourceNotes({ ...bookDraft(), notes: [] }), /nonempty/);
+});
+
+test('a filesystem publication failure reports incomplete output and cleans up unchanged generated files', async t => {
+  const { parent } = await fixture(t);
+  const input = bookDraft();
+  input.notes[1].path = 'x'.repeat(300) + '.md';
+  await assert.rejects(writeSourceNotes(input, parent, 'none'), /preparation is incomplete/);
+  assert.deepEqual(await readdir(parent), []);
+});
+
+test('multi-note CLI preview and publication keep note boundaries and question counts', async t => {
+  const { root, parent } = await fixture(t);
+  const run = promisify(execFile);
+  const cli = [path.resolve('node_modules/tsx/dist/cli.mjs'), path.join(__dirname, 'cli.ts')];
+  const draftPath = path.join(root, 'book.json');
+  await writeFile(draftPath, JSON.stringify(bookDraft()));
+  const preview = JSON.parse((await run(process.execPath, [...cli, '--draft', draftPath, '--preview'])).stdout);
+  assert.equal(preview.notes.length, 3);
+  assert.equal(preview.questionCount, 3);
+  assert.deepEqual(await readdir(parent), []);
+  const output = JSON.parse((await run(process.execPath, [...cli, '--draft', draftPath, '--parent', parent, '--prior-output', 'none'])).stdout);
+  assert.equal(output.notes.length, 3);
+  assert.equal(output.questionCount, 3);
+  assert.equal((await scanVault(root)).records.length, 3);
+});
+
+test('staged continuation adds chapters with fresh IDs and preserves all published content', async t => {
+  const { root, parent } = await fixture(t);
+  const initial = bookDraft();
+  initial.notes = initial.notes.slice(0, 1);
+  const first = await writeSourceNotes(initial, parent, 'none');
+  const original = await readFile(first.notes[0].filePath, 'utf8');
+  const continuation = bookDraft();
+  continuation.notes = continuation.notes.slice(1);
+  continuation.notes[0].path = '02 Second chapter.md';
+  const appended = await appendSourceNotes(continuation, first.folderPath);
+  assert.equal(appended.folderPath, first.folderPath);
+  assert.equal(appended.questionCount, 2);
+  assert.equal(await readFile(first.notes[0].filePath, 'utf8'), original);
+  const scan = await scanVault(root);
+  assert.deepEqual(scan.diagnostics, []);
+  assert.equal(scan.records.length, 3);
+  assert.equal(new Set(scan.records.map(record => record.id)).size, 3);
+  const another = bookDraft();
+  another.notes = [another.notes[2]];
+  another.notes[0].path = 'Appendices/02 Extra.md';
+  await appendSourceNotes(another, first.folderPath);
+  assert.equal((await scanVault(root)).records.length, 4);
+});
+
+test('continuation preflights occupied, case-variant, and symlink paths before adding any file', async t => {
+  const { root, parent } = await fixture(t);
+  const first = await writeSourceNotes(bookDraft(), parent, 'none');
+  const input = bookDraft();
+  input.notes[0].path = '04 New chapter.md';
+  input.notes[1].path = '01 Introduction.md';
+  await assert.rejects(appendSourceNotes(input, first.folderPath), /absent note paths/);
+  await assert.rejects(readFile(path.join(first.folderPath, '04 New chapter.md')), { code: 'ENOENT' });
+  input.notes = [input.notes[0]];
+  input.notes[0].path = 'appendices/02 Extra.md';
+  await assert.rejects(appendSourceNotes(input, first.folderPath), /spelling/);
+  const outside = path.join(root, 'Outside');
+  await mkdir(outside);
+  await symlink(outside, path.join(first.folderPath, 'Linked'));
+  input.notes[0].path = 'Linked/Extra.md';
+  await assert.rejects(appendSourceNotes(input, first.folderPath), /symlink/);
+  assert.deepEqual(await readdir(outside), []);
+  await assert.rejects(appendSourceNotes(input, path.join(first.folderPath, 'Linked')), /symlink/);
+});
+
+test('failed continuation removes only its own unchanged files and new directories', async t => {
+  const { parent } = await fixture(t);
+  const first = await writeSourceNotes(bookDraft(), parent, 'none');
+  const before = await readdir(first.folderPath);
+  const original = await readFile(first.notes[0].filePath, 'utf8');
+  const input = bookDraft();
+  input.notes[0].path = 'Appendices/02 Extra.md';
+  input.notes[1].path = 'New directory/03 New.md';
+  input.notes[2].path = 'x'.repeat(300) + '.md';
+  await assert.rejects(appendSourceNotes(input, first.folderPath), /incomplete/);
+  assert.deepEqual(await readdir(first.folderPath), before);
+  assert.deepEqual(await readdir(path.join(first.folderPath, 'Appendices')), ['01 Notation.md']);
+  assert.equal(await readFile(first.notes[0].filePath, 'utf8'), original);
+});
+
+test('CLI continuation accepts an existing source folder and refuses conflicting destination modes', async t => {
+  const { root, parent } = await fixture(t);
+  const first = await writeSourceNotes(bookDraft(), parent, 'none');
+  const input = bookDraft();
+  input.notes = [input.notes[0]];
+  input.notes[0].path = '04 New.md';
+  const draftPath = path.join(root, 'next.json');
+  await writeFile(draftPath, JSON.stringify(input));
+  const run = promisify(execFile);
+  const cli = [path.resolve('node_modules/tsx/dist/cli.mjs'), path.join(__dirname, 'cli.ts'), '--draft', draftPath];
+  await assert.rejects(run(process.execPath, [...cli, '--append-to', first.folderPath, '--parent', parent]), /cannot be combined/);
+  const result = JSON.parse((await run(process.execPath, [...cli, '--append-to', first.folderPath])).stdout);
+  assert.equal(result.questionCount, 1);
+  assert.equal((await scanVault(root)).records.length, 4);
 });

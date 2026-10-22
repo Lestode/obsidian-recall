@@ -59,21 +59,39 @@ accept arbitrary filesystem paths or copy the source into the collection.
 Missing or unreadable sources return an unavailable-source response. HTTP(S)
 source links continue to open directly.
 
-For the first milestone, each preparation run produces one Markdown note for
-the agreed source scope, with sections and questions in source order. Splitting
-the output across multiple topic files is deferred. The user selects a parent
-folder within an existing Recall collection. Generation creates a folder for
-the source beneath that parent and places the new note inside it. Existing
-notes must not be overwritten or modified.
+A preparation run produces one or more Markdown notes for the agreed source
+scope, with files, sections, and questions in source order. Books default to
+one note per chapter and one per substantive appendix. Keep major sections
+inside their chapter note so completion beside that filename represents the
+whole chapter. Splitting chapters into section files is deferred until combined
+chapter/folder progress is supported. Short single-page sources may still
+produce one note. Use numbered filenames to preserve the reading sequence and
+retain useful section headings within each note.
+
+The user selects a parent folder within an existing Recall collection.
+Generation creates one folder for the source beneath that parent and places
+all the new notes inside it. Check coverage across the complete agreed scope,
+including the boundaries between files. Validate the complete publication batch
+before writing; a failed publication must be reported as incomplete.
+Existing notes must not be overwritten or modified. Source-history and copy
+confirmation apply to the complete source, not separately to every chapter.
+
+When the user requests early access, publish a checked batch of whole chapters
+and identify the release as partial. Continue that same preparation by adding
+only absent note paths to its existing source folder. Validate each entire batch
+before writing, refuse occupied paths or symlink traversal, and preserve every
+published question and identity. This explicit continuation is not another
+independent copy or automatic recognition of a source version. Check coverage
+over the complete set before reporting the book finished.
 
 If the source already has generated notes, generation must stop and ask the
 user before creating another copy. It must not silently duplicate the output.
 For this first version, ask the user whether the source already has generated
 notes, including older versions, unless that information is already supplied.
-The writer requires either a declaration of no prior output or confirmation
+For a new preparation, the writer requires either a declaration of no prior output or confirmation
 of a new independent copy. This is a user check, not automatic recognition of
 URLs, renamed PDFs, or updated source versions. An existing destination folder
-also blocks writing without copy confirmation. Confirmed copies use a new
+also blocks a new preparation without copy confirmation. Confirmed copies use a new
 numbered folder when necessary; existing folders remain unchanged.
 
 Identity must be generated and checked automatically; users should not write
@@ -185,6 +203,34 @@ or the cursor advances. A content/version conflict requires synchronization and
 retry; it never marks a different version. Reviewed/recall outcomes remain a
 separate future concept; these labels toggle the existing study state only.
 
+## Chapter and note completion
+
+In Obsidian's file list and beside an open note's title, show a small progress
+label for notes containing Recall questions. This is derived from the same
+per-question study states used by the Reviewed / Not reviewed controls:
+
+- While any question is Not studied, show the studied count and total, such as
+  **12/20**. At zero, show **0/20**.
+- A note with at least one question is **✓ Completed** only when every current
+  question is Studied. Include the count in its tooltip and accessible label.
+- Adding an unstudied question or marking one Not studied makes the note
+  incomplete again. Removing or moving questions recalculates each affected
+  note from its current questions; archived questions are excluded.
+- Notes with no questions have no completion label. Invalid or unsynchronized
+  notes must never appear completed from retained index data. Show **Syncing…**
+  while their current content cannot be confirmed, **Loading…** before the first
+  read, and **Unavailable** when the service cannot be reached.
+- Edits retain study marks and therefore completion, consistent with the
+  existing question behavior. Show **Content changed** beside the aggregate
+  progress when any studied question differs from its studied version.
+
+The labels update after confirmed study saves and refresh when notes change or
+the service reconnects. They are informational: they do not mark questions,
+write Markdown/frontmatter, rename files, or store a separate completion flag.
+Completion means covering all the questions, not mastery or a graded review.
+Each chapter file has its own label. Combined folder/chapter totals and
+splitting chapters into section files are deferred together.
+
 ## Example with Spinning Up
 
 For [Spinning Up's Key Concepts introduction](https://spinningup.openai.com/en/latest/spinningup/rl_intro.html),
@@ -242,9 +288,11 @@ scope to Recall Markdown ready for a collection. It should remove the separate
 step of generating a list and manually converting that list into questions.
 The agent skill supplies the source-reading and question-generation procedure;
 the writer supplies automatic identity, structural validation, and creation of
-one note in a source folder. Source access uses the agent's available reading
-tools. Inaccessible or unreliable extraction must be reported, not presented
-as completed coverage. A bounded Spinning Up draft is included for the pilot.
+notes in one source folder. Source access uses the agent's available reading
+tools. The writer validates every note before publishing the source's set;
+one note per chapter and appendix is the default for books. Inaccessible or
+unreliable extraction must be reported, not presented as completed coverage.
+A bounded Spinning Up draft is included for the pilot.
 
 Acceptance of this milestone would require:
 

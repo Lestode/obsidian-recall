@@ -59,3 +59,19 @@
 }
 .recall-study-changed { font-size: var(--font-smallest); }
 .recall-study-changed[hidden] { display: none; }
+
+.recall-note-progress {
+  display: inline-block;
+  margin-inline-start: 0.6em;
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+  font-weight: 500;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+  user-select: none;
+}
+.recall-note-progress[hidden] { display: none; }
+.recall-note-progress[data-state="complete"] { color: var(--text-success); }
+.recall-note-progress[data-state="incomplete"] { color: var(--text-warning); }
+.view-header-title-container > .recall-note-progress { flex: 0 0 auto; }

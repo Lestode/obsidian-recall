@@ -42,7 +42,8 @@ The Obsidian authoring layer currently supports:
 7. Import numbered question lists with optional `A:` answers.
 
 An additional agent-driven source preparation workflow reads PDFs or websites
-and creates a new, parser-validated Recall note with automatic identity. See
+and creates new, parser-validated Recall notes with automatic identity, using
+one note per chapter for books. See
 [`source-study-workflow.md`](source-study-workflow.md) and the
 [source preparation skill](../automation/source-preparation/SKILL.md).
 
@@ -64,6 +65,8 @@ toggles only that question through a small coloured Reviewed / Not reviewed labe
 cursor on a question marks it studied and advances within the note; Enter on a
 studied question returns it to Not studied. Edits retain the mark with
 **Content changed**.
+File-list and open-title labels derive note completion from those question
+marks; see the [completion rules](source-study-workflow.md#chapter-and-note-completion).
 The local service stores progress separately from Markdown. See
 [`source-study-workflow.md`](source-study-workflow.md) for the interaction,
 connection requirements, and backup procedure. Consuming this status for recall

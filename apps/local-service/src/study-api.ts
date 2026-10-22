@@ -32,8 +32,9 @@ export function studyApi(database: RecallDatabase, synchronizer: RecallSynchroni
       if (request.method === "GET") {
         const filePath = url.searchParams.get("file");
         if (!filePath) { reply(400, { error: "A note path is required." }); return true; }
+        const synchronized = await synchronizer.studyFileSynchronized(filePath);
         reply(200, { states: database.listQuestions({ filePaths: [filePath] })
-          .map(question => database.getStudyState(question.id)) });
+          .map(question => database.getStudyState(question.id)), synchronized });
         return true;
       }
       if (request.method !== "POST") { reply(405, { error: "Method not allowed." }); return true; }

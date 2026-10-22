@@ -1,7 +1,7 @@
 import type { StudyState } from "@recall/database";
 
 export type StudyTransport = (route: string, body?: unknown) => Promise<unknown>;
-type FileState = { states: Map<string, StudyState>; error: string | null; loaded: boolean };
+export type FileState = { states: Map<string, StudyState>; error: string | null; loaded: boolean; synchronized: boolean };
 
 /** Shared by every rendered instance of a question, without writing authored notes. */
 export class StudyClient {
@@ -14,7 +14,7 @@ export class StudyClient {
   constructor(private transport: StudyTransport) {}
 
   snapshot(file: string): FileState {
-    return this.files.get(file) ?? { states: new Map(), error: null, loaded: false };
+    return this.files.get(file) ?? { states: new Map(), error: null, loaded: false, synchronized: false };
   }
 
   isBusy(id: string): boolean { return this.busy.has(id); }
@@ -43,11 +43,12 @@ export class StudyClient {
     const generation = this.generations.get(file) ?? 0;
     const task = (async () => {
       try {
-        const result = await this.transport(`/api/study?file=${encodeURIComponent(file)}`) as { states: StudyState[] };
+        const result = await this.transport(`/api/study?file=${encodeURIComponent(file)}`) as { states: StudyState[]; synchronized?: boolean };
         if (!Array.isArray(result.states)) throw new Error("Study service needs updating.");
         if ((this.generations.get(file) ?? 0) !== generation) return;
         this.files.set(file, {
           states: new Map(result.states.map(state => [state.questionId, state])), error: null, loaded: true,
+          synchronized: result.synchronized === true,
         });
       } catch (error) {
         if ((this.generations.get(file) ?? 0) !== generation) return;
