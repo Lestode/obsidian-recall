@@ -3,7 +3,7 @@ import { link, lstat, mkdir, realpath, rmdir, unlink, writeFile } from "node:fs/
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import {
-  ANSWER_PREFIX, identityComment, orphanRecallIdentities, parseRecallQuestions, RECALL_MARKER_FILE,
+  formatRecallAnswer, identityComment, orphanRecallIdentities, parseRecallQuestions, RECALL_MARKER_FILE,
 } from "../../packages/core/src/grammar";
 
 type ObjectValue = Record<string, unknown>;
@@ -106,7 +106,7 @@ export function renderSourceNote(input: unknown): PreparedNote {
       const answer = `${body}\n\nSource: ${references.join(", ")}`;
       const id = randomUUID();
       expected.push({ id, prompt, answer });
-      parts.push(`**Q:** ${prompt}\n${identityComment(id)}\n\n${ANSWER_PREFIX}\n\n${answer}`);
+      parts.push(`**Q:** ${prompt}\n${identityComment(id)}\n\n${formatRecallAnswer(answer)}`);
     }
   }
   const markdown = `${parts.join("\n\n")}\n`;

@@ -49,7 +49,7 @@ test('a completed source note retains rich answers and indexes through the exist
   assert.ok(scan.records[0].answer.startsWith(input.sections[0].questions[0].answer));
   assert.match(scan.records[0].answer, /https:\/\/example.org\/lesson#definition/);
   assert.ok(parseRecallQuestions(note).every(q => q.identityLine === q.questionLine + 1));
-  assert.equal(note.split('\n**A:**\n\n').length - 1, 2);
+  assert.equal(note.split('\n**A:** ').length - 1, 2);
   assert.deepEqual(await readdir(path.dirname(result.filePath)), ['Core concepts.md']);
 });
 
@@ -60,7 +60,7 @@ test('answer labels do not change indexed identities or content versions', async
   const result = await writeSourceNote(input, parent, 'none');
   const labelled = await scanVault(root);
   const markdown = await readFile(result.filePath, 'utf8');
-  await writeFile(result.filePath, markdown.replaceAll('\n**A:**\n\n', '\n'));
+  await writeFile(result.filePath, markdown.replaceAll('\n**A:** ', '\n'));
   const unlabelled = await scanVault(root);
   assert.deepEqual(labelled.diagnostics, []);
   assert.deepEqual(unlabelled.diagnostics, []);

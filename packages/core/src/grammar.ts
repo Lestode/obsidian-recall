@@ -191,6 +191,16 @@ export function identityComment(id: string): string {
   return `<!-- recall:id=${id} -->`;
 }
 
+/** Keep prose beside A:, while preserving the syntax of block-first answers. */
+export function formatRecallAnswer(answer: string): string {
+  const [first = "", second = ""] = answer.split("\n", 2);
+  const block = FENCE_RE.test(first) || ANY_HEADING_RE.test(first) || LIST_ITEM_RE.test(first)
+    || /^(?: {4}|\t)/.test(first)
+    || /^ {0,3}(?:>|<|\$\$|\\\[|\[[^\]]+\]:|(?:[-*_][ \t]*){3,}$)/.test(first)
+    || (first.includes("|") && /^\s*\|?\s*:?-+/.test(second));
+  return `${ANSWER_PREFIX}${block ? "\n\n" : " "}${answer}`;
+}
+
 export function questionTemplate(id: string): string {
-  return `${QUESTION_PREFIX} \n${identityComment(id)}\n\n${ANSWER_PREFIX}\n\n`;
+  return `${QUESTION_PREFIX} \n${identityComment(id)}\n\n${formatRecallAnswer("")}\n\n`;
 }

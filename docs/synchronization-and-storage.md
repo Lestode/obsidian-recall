@@ -280,7 +280,8 @@ before review outcomes or scheduling policy are implemented.
 
 The inspector uses a native collapsed disclosure for answers so prompts remain
 scannable while answers are still inspectable. Expanded answers display a
-visible **A:** label beside the answer content. This is inspector presentation,
+visible **A:** label beside the first line of answer content, with no extra
+blank line after the label. This is inspector presentation,
 not the progressive-reveal behavior of the future review screen, which remains
 unresolved.
 

@@ -22,11 +22,21 @@ explicitly listed as unresolved in
   removed.
 - Numbered imports support optional `A:` answers and place each answer after the
   protected identity and its separating blank line.
-- New templates, imports, and source notes include a visible `**A:**` label.
+- New templates, imports, and source notes put prose immediately after the
+  visible `**A:**` label on the same line. Block-first lists, code, equations,
+  headings, and tables retain the line breaks required by Markdown. The shared
+  formatter is checked against rendered block types and parsed answer content.
   The parser removes only the leading presentation label from indexed answer
   content; inline labels, standalone labels, empty templates, rich Markdown,
   and unchanged content hashes are covered by tests. Legacy unlabelled answers
-  remain supported. The inspector displays one **A:** beside expanded answers.
+  remain supported. The inspector displays one **A:** beside the first line of
+  expanded answers, with the first content block's top margin removed.
+- The existing generated Spinning Up note was backed up and reformatted in
+  place. All 179 questions present before that formatting retained the same
+  UUIDs, prompts, parsed answers, content hashes, and progress records. The older
+  independent note was untouched. A headless Chrome check of the real inspector
+  verified the A: label and first answer text share a baseline at desktop and
+  phone widths.
 - The shared structural parser ignores fenced code, retains level-three and
   deeper answer headings, and ends answers at questions or ATX/Setext
   level-one/two headings.
@@ -151,7 +161,7 @@ pilot, not human content acceptance or coverage of the full introduction.
   retained their pre-installation hashes. Previous plugin artifacts/settings
   were backed up before installation. Activating the updated plugin requires
   reloading it in the already open private vault.
-- The full 105-test suite, TypeScript check, and production build pass. A
+- The full 106-test suite, TypeScript check, and production build pass. A
   watcher deletion test timed out during concurrent build/UI checks and passed
   when the complete suite was rerun alone; no watcher behavior was changed. These
   checks do not claim grading, scheduling, multi-device progress, or automatic

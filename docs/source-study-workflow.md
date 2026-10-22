@@ -41,7 +41,8 @@ The output should follow the source's learning sequence. Filenames supply
 topics, folders supply broader context, and section titles group related
 questions. Level-one and level-two headings separate question groups;
 level-three and deeper headings remain inside answers, as the grammar specifies.
-Each generated answer starts with a visible **A:** label in its own paragraph.
+Each generated prose answer starts immediately after **A:** on the same line.
+Block-first answers retain the line break required by their Markdown syntax.
 
 Questions should cover meaningful concepts, explanations, and applications in
 manageable pieces. Suggested answers should be grounded in the source and

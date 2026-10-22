@@ -54,7 +54,8 @@ The slash command is a convenience. The resulting Markdown remains understandabl
 
 The user writes the answer as ordinary Markdown immediately below the generated
 identity marker, in the area beginning with the visible **A:** label inserted
-by the template. In the editor the identity is represented by a locked `Recall`
+by the template. Prose starts immediately after **A:** on the same line;
+block-first answers keep their normal Markdown structure. In the editor the identity is represented by a locked `Recall`
 indicator. The answer
 continues until the next recall question, level-one heading, level-two heading,
 or end of file. Questions and answers are expected to evolve as understanding
@@ -66,7 +67,7 @@ The user may paste and select a numbered Markdown list, then run **Convert
 numbered selection to recall questions**. The extension converts each numbered
 item to the canonical question form and generates its identity. An answer that
 begins with `A:` or `**A:**` is placed below the identity with the canonical
-`**A:**` label; without either input marker, the labelled answer area is left
+`**A:** Answer text` on one line; without either input marker, the labelled answer area is left
 blank. Continuation lines after an answer marker remain part
 of that answer. Markdown headings in the selection are normalized to level two so
 they remain answer boundaries. A plain title before the first numbered item is

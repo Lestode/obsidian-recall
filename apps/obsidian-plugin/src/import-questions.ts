@@ -1,4 +1,4 @@
-import { ANSWER_PREFIX, identityComment } from "./grammar";
+import { formatRecallAnswer, identityComment } from "./grammar";
 
 export interface QuestionImportResult {
   markdown: string;
@@ -94,8 +94,7 @@ export function convertNumberedQuestions(
 
   const blocks = tokens.map((token) => {
     if (token.kind === "heading") return `## ${token.text}`;
-    const answer = token.answer ? `\n\n${token.answer}` : "";
-    return `**Q:** ${token.text}\n${identityComment(createId())}\n\n${ANSWER_PREFIX}${answer}`;
+    return `**Q:** ${token.text}\n${identityComment(createId())}\n\n${formatRecallAnswer(token.answer)}`;
   });
 
   return {
