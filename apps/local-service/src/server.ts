@@ -5,6 +5,7 @@ import path from "node:path";
 import type { RecallDatabase } from "@recall/database";
 import type { RecallSynchronizer, SyncEvent } from "./synchronizer";
 import { openSourcePdf } from "./source-pdf";
+import { studyApi } from "./study-api";
 
 const STATIC_FILES: Record<string, { file: string; type: string }> = {
   "/": { file: "index.html", type: "text/html; charset=utf-8" },
@@ -28,6 +29,7 @@ export function createRecallServer(options: {
 }): Server {
   const { database, synchronizer, webRoot, vaultName } = options;
   const clients = new Set<ServerResponse>();
+  const handleStudy = studyApi(database, synchronizer);
   let lastSyncEvent: SyncEvent | null = null;
 
   synchronizer.on("sync", (event: SyncEvent) => {
@@ -38,6 +40,7 @@ export function createRecallServer(options: {
 
   return createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    if (await handleStudy(request, response, url)) return;
 
     if (request.method === "GET" && url.pathname === "/api/status") {
       json(response, { ...database.status(), vaultName, lastSyncEvent });

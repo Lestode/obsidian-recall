@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
 import { watch, type FSWatcher } from "node:fs";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 import type { RecallDatabase } from "@recall/database";
 import { markerRoot, RECALL_MARKER_FILE } from "@recall/core";
@@ -65,6 +66,22 @@ export class RecallSynchronizer extends EventEmitter {
   requestFullReconcile(): void {
     this.forceFull = true;
     this.schedule();
+  }
+
+  async canStudy(filePath: string, id: string, contentHash: string): Promise<boolean> {
+    if (this.diagnosticsByFile.has(filePath)) return false;
+    const question = this.database.getQuestion(id);
+    if (!question || question.archivedAt || question.filePath !== filePath) return false;
+    const marker = question.collectionPath === "." ? RECALL_MARKER_FILE
+      : `${question.collectionPath}/${RECALL_MARKER_FILE}`;
+    try {
+      if (!(await stat(path.join(this.vaultPath, marker))).isFile()) return false;
+      const scan = await scanChangedFiles(this.vaultPath, [filePath], [marker], this.database);
+      return !scan.diagnostics.length && scan.records.some(record =>
+        record.id === id && record.contentHash === contentHash);
+    } catch {
+      return false;
+    }
   }
 
   stop(): void {

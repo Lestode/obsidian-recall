@@ -1,4 +1,4 @@
-.cm-line.recall-identity-line {
+.markdown-source-view.mod-cm6 .cm-line.recall-identity-line {
   display: none;
 }
 
@@ -17,3 +17,21 @@
   vertical-align: 0.08em;
   user-select: none;
 }
+.recall-study-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-inline-start: 0.6em;
+  flex-wrap: wrap;
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+  user-select: none;
+}
+.recall-study-control button {
+  font-size: inherit;
+  padding: 0.1em 0.5em;
+  height: auto;
+  line-height: 1.6;
+}
+.recall-study-control button[hidden] { display: none; }
+.recall-study-control button:focus-visible { outline: 2px solid var(--interactive-accent); }

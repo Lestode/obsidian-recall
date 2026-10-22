@@ -1,6 +1,6 @@
 # Obsidian Recall documentation
 
-Status: authoring layer plus the first Markdown-to-SQLite inspection slice
+Status: authoring, source preparation, read-only inspection, and Obsidian first study
 
 This directory is the authoritative source for Obsidian Recall's product behavior. Code must conform to these documents. When behavior changes, update the relevant document before or alongside the implementation.
 
@@ -58,11 +58,14 @@ The current companion-service phase adds:
 
 Scheduling, grading, and writable review workflows remain later phases.
 
-The source preparation implementation and future first-study design are described in
-[`source-study-workflow.md`](source-study-workflow.md). It records the agreed
-per-question study action and the information to store before a review platform
-exists, separately from proposals and open decisions. Study tracking is not
-implemented; consuming study status for recall comes later.
+Obsidian now provides per-question study controls in Live Preview and Reading
+view. Every existing or new question starts Not studied. An explicit Enter/click
+marks only the focused question, persists **✓ Studied**, and advances within the
+note. Edits retain that mark with **Content changed**; Undo study reverses it.
+The local service stores progress separately from Markdown. See
+[`source-study-workflow.md`](source-study-workflow.md) for the interaction,
+connection requirements, and backup procedure. Consuming this status for recall
+sessions comes later.
 
 ## Change process
 

@@ -25,8 +25,8 @@ questions. Delivering recall sessions is separate from recording study progress.
 
 The high-level design, proposed source preparation workflow, and remaining
 study decisions are in
-[`source-study-workflow.md`](source-study-workflow.md). Study tracking is not
-implemented in the current read-only inspection phase.
+[`source-study-workflow.md`](source-study-workflow.md). Study tracking is implemented in Obsidian independently of the read-only web
+inspector. It does not change review-session selection or grading.
 
 ## Explicitly unresolved
 

@@ -95,7 +95,7 @@ function renderQuestions() {
         <div class="question-meta"><span class="status ${question.status}">${question.status}</span><span>#${question.questionOrdinal + 1}</span></div>
         ${section}
         <div class="markdown question-prompt">${renderMarkdown(question.prompt)}</div>
-        <details><summary>Show answer</summary><div class="answer markdown">${question.answer ? renderMarkdown(question.answer, question.id) : "<em>No answer yet.</em>"}</div></details>
+        <details><summary>Show answer</summary><div class="answer"><strong class="answer-label">A:</strong><div class="answer-content markdown">${question.answer ? renderMarkdown(question.answer, question.id) : "<em>No answer yet.</em>"}</div></div></details>
       </article>`;
   }).join("");
 }

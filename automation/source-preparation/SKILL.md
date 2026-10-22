@@ -57,7 +57,8 @@ Create an agent-owned temporary JSON draft using
 - Each question has a single-line `prompt`, Markdown `answer`, and nonempty
   `references`. Website references have `url` and an optional `label`; PDF
   references have `page`, a one-based physical PDF page number.
-- Do not supply IDs. Use level-three or deeper headings inside answers; close
+- Do not supply IDs or leading answer labels; the writer adds identity and the
+  visible **A:** label. Use level-three or deeper headings inside answers; close
   code fences. Math, lists, code, and paragraphs are preserved as Markdown.
 
 Run from the repository root:

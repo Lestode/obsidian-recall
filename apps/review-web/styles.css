@@ -52,7 +52,9 @@ input[type="search"] { width: min(360px, 45vw); padding: 11px 14px; border: 1px 
 .section-path { margin-bottom: 7px; color: var(--muted); font-size: 12px; }
 details { color: var(--muted); }
 summary { cursor: pointer; font-size: 13px; }
-.answer { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--ink); line-height: 1.6; }
+.answer { display: flex; align-items: baseline; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--ink); line-height: 1.6; }
+.answer-label { flex-shrink: 0; }
+.answer-content { flex: 1; min-width: 0; }
 .markdown > :last-child { margin-bottom: 0; }
 .markdown pre { overflow-x: auto; padding: 12px; border-radius: 8px; background: #f0f3f0; }
 .markdown code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

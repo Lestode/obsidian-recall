@@ -4,7 +4,8 @@ Verification date: 2026-10-22
 
 This checklist records the implementation pass against the authoritative
 Markdown specifications. It covers authoring, agent-driven source preparation,
-and the read-only inspection phase; the decisions explicitly listed as unresolved in
+the read-only inspection phase, and per-question study in Obsidian. The decisions
+explicitly listed as unresolved in
 `review-workflow.md` and `synchronization-and-storage.md` remain out of scope.
 
 ## Authoring and grammar
@@ -21,6 +22,11 @@ and the read-only inspection phase; the decisions explicitly listed as unresolve
   removed.
 - Numbered imports support optional `A:` answers and place each answer after the
   protected identity and its separating blank line.
+- New templates, imports, and source notes include a visible `**A:**` label.
+  The parser removes only the leading presentation label from indexed answer
+  content; inline labels, standalone labels, empty templates, rich Markdown,
+  and unchanged content hashes are covered by tests. Legacy unlabelled answers
+  remain supported. The inspector displays one **A:** beside expanded answers.
 - The shared structural parser ignores fenced code, retains level-three and
   deeper answer headings, and ends answers at questions or ATX/Setext
   level-one/two headings.
@@ -62,7 +68,7 @@ and the read-only inspection phase; the decisions explicitly listed as unresolve
   browser URL. Website section links, math, lists, and script sanitization also
   passed. This does not independently verify Obsidian's external-file handling
   or every PDF viewer's page positioning.
-- The source skill validator, TypeScript check, full 91-test suite, and build
+- The source skill validator, TypeScript check, full 94-test suite, and build
   passed. No synchronization code was changed.
 
 ### Pilot coverage evidence
@@ -104,6 +110,44 @@ pilot, not human content acceptance or coverage of the full introduction.
 - Validation and transaction failures preserve the previous readable revision.
 - The service starts its loopback API before scanning, so a startup validation
   error is inspectable and recoverable through manual rescan.
+
+## First study in Obsidian
+
+- Existing and generated questions all start Not studied, even with review
+  history. Only an explicit per-question action writes study state.
+- Live Preview and Reading view display status and Mark studied, Next, and Undo
+  study controls. Enter on a focused button saves and advances within the note;
+  Next skips, the final question retains focus, and ordinary editing is separate.
+- The sole SQLite writer is the loopback service. Its study API verifies the
+  vault path, question UUID, file, current disk/index content, and previous study
+  revision. Browser form requests, other vaults, stale versions, invalid or
+  archived questions, and conflicting writes cannot change progress.
+- Study state survives file moves, reordering, reconciliation, archive/restore,
+  service restart, and app reload. Edits preserve the studied timestamp/hash and
+  show Content changed; reverting to the studied version clears that notice.
+  Review events and session snapshots are unaffected.
+- Controls share confirmed state, avoid optimistic success, and show Study
+  unavailable when disconnected. A delayed read cannot erase a confirmed mark.
+- Actual Obsidian v1.10.3 in an isolated profile/vault verified Enter navigation,
+  skipping without marking earlier questions, last-question focus, explicit
+  undo in Reading view, unchanged Markdown after study writes, changed-content
+  notices, and persistence after reloading the app. A 40-question synthetic note
+  with long answers verified scrolling and focus into unrendered sections in
+  Reading view and Live Preview. The identity-line CSS now overrides Obsidian's
+  line display rule, keeping machine comments hidden in the editor.
+- An offline/restart check in Obsidian verified Study unavailable, retry without
+  marking or advancing, and recovery of the previously confirmed state.
+- The installed private-vault build and connected service were checked without
+  marking private content: all 180 questions in the generated Spinning Up note
+  remained Not studied, and both that note and the older independent note
+  retained their pre-installation hashes. Previous plugin artifacts/settings
+  were backed up before installation. Activating the updated plugin requires
+  reloading it in the already open private vault.
+- The full 101-test suite, TypeScript check, and production build pass. A
+  watcher deletion test timed out during concurrent build/UI checks and passed
+  when the complete suite was rerun alone; no watcher behavior was changed. These
+  checks do not claim grading, scheduling, multi-device progress, or automatic
+  backups. The documented offline backup procedure remains manual.
 
 ## Inspector
 

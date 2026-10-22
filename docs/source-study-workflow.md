@@ -1,9 +1,8 @@
 # Source preparation and first study
 
 Status: first implementation of agent-driven source preparation, with an
-initial pilot awaiting content review. Study tracking remains a high-level
-design; the per-question study interaction is agreed. Review delivery is a
-later phase. The companion service and web inspector remain read-only.
+initial pilot awaiting content review. Per-question first-study controls are
+implemented in Obsidian under the decisions below. Review delivery is a later phase. The web inspector remains read-only.
 
 The workflow should let someone provide a PDF or a learning website, receive
 structured Recall notes, study them at their own pace, and store which questions
@@ -42,6 +41,7 @@ The output should follow the source's learning sequence. Filenames supply
 topics, folders supply broader context, and section titles group related
 questions. Level-one and level-two headings separate question groups;
 level-three and deeper headings remain inside answers, as the grammar specifies.
+Each generated answer starts with a visible **A:** label in its own paragraph.
 
 Questions should cover meaningful concepts, explanations, and applications in
 manageable pieces. Suggested answers should be grounded in the source and
@@ -120,8 +120,10 @@ coverage.
 
 ## Study information to store
 
-New questions in this workflow begin as **Not studied**. Importing a question,
-opening a note, or revealing an answer does not mark it studied.
+All questions, including existing collections and questions with prior review
+history, begin as **Not studied** unless explicitly marked through the study
+control. There is no inference or backfill from creation, importing, reading,
+answer reveal, or reviews.
 
 | Study status | Meaning | Intended use by a future review platform |
 |---|---|---|
@@ -150,9 +152,9 @@ remain unresolved in the
 
 The study interaction focuses one question at a time while retaining its topic
 and section context. It must be available independently of the future review
-platform; its exact interface location remains open. After covering that
-question's material, the user presses
-**Enter** or clicks the corresponding study control. The interaction:
+platform. It lives in Obsidian beside each question, in Live Preview and
+Reading view, with the existing note supplying answers and source links. After
+covering that question's material, the user presses **Enter** or clicks the corresponding study control. The interaction:
 
 1. Marks only the focused question as studied and persists that status.
 2. Shows a persistent **✓ Studied** marker beside that question.
@@ -164,8 +166,18 @@ one question never silently activates earlier questions.
 
 The marker remains visible on return so the user can distinguish covered and
 upcoming material. Enter applies to the study control; ordinary note editing
-keeps its own keyboard behavior. Navigation, correction of accidental marks,
-and the precise layout still need interaction design.
+keeps its own keyboard behavior. A **Next** control skips without marking;
+already studied questions retain their mark and offer Next and **Undo study**.
+Undo explicitly returns only that question to Not studied. Native keyboard
+focus and scrolling allow revisiting earlier questions. Advancing follows the
+current note order, never crosses files or wraps at the end, and never marks
+intervening questions. The final control retains focus.
+
+The local companion service must be running for this vault. Plugin settings
+provide its loopback address. An unavailable service shows **Study unavailable**
+with retry; it must never imply that an unknown state is Not studied. Saving
+must succeed before the marker or focus advances. A content/version conflict
+asks the user to retry after synchronization; it never marks a different version.
 
 ## Example with Spinning Up
 
@@ -182,21 +194,38 @@ unstudied questions from the covered ones. A future review platform can use
 that information to exclude them. Even within one section, each question needs
 its own explicit study action.
 
-## Proposed state ownership
+## Study state ownership
 
 Markdown continues to own authored content: hierarchy, titles, questions,
-answers, and source references. SQLite would own study progress alongside
+answers, and source references. SQLite owns study progress alongside
 review information, attached to each question's stable Recall UUID. Study
-progress would be stored independently of the rebuildable content index and
-would not require review events to exist. This follows the existing
+progress is stored independently of the rebuildable content index and
+does not require review events to exist. This follows the existing
 [architecture](architecture.md) and avoids introducing progress syntax into
 otherwise portable notes.
 
 Moving or renaming a question should retain its study progress through that
 identity. Newly generated questions with new identities begin unstudied even
-when inserted into a previously studied section. How edits to existing content
-affect eligibility remains an explicit decision alongside the existing changed
-content policy.
+when inserted into a previously studied section. Edits retain the studied mark
+and display **Content changed** when the current prompt/answer hash differs from the version marked studied. This is informational;
+no scheduling or eligibility policy is introduced. Undo followed by a new study
+action records the current version. Reverting exactly to the studied version
+clears the notice. Changes to source location or headings do not trigger it.
+
+The service is the sole SQLite writer. The database is bound to its vault path;
+the plugin verifies the connected vault before reading or writing progress.
+Study writes check the question UUID, file, content hash, and previous study
+state, reject archived or invalid questions, and never create review events.
+Study state survives reconciliation, moves, archival, and service restarts.
+A rebuild means reconciliation of Markdown into the existing database, not
+deleting that database.
+
+Progress is local to this computer. For backup, stop the service cleanly and
+copy the database at the path printed on startup to a separate backup location;
+restore it with the service stopped, then restart against the same vault.
+Do not copy a live WAL database or put the active database in iCloud. Losing
+the database loses progress; Markdown alone cannot restore it. Automatic backup,
+portable vault relocation, export, and multi-device progress remain later work.
 
 ## Suggested delivery sequence
 
@@ -228,30 +257,22 @@ It must remain usable before study tracking or a review platform is available.
 
 ### Subsequent milestones
 
-2. Agree the remaining persistence and interface decisions, then add durable
+2. Implement the recorded Obsidian interaction and durable
    per-question study state and the Enter/click interaction. This milestone
    stores what has been studied without requiring a review platform.
 3. In a later review phase, consume the stored study status when selecting
    questions, while preserving the documented stable-session behavior.
 
-This sequence fits a future phase. It does not expand the current inspection
-slice into grading, scheduling, or Markdown edits from the web interface.
+First study extends the authoring and storage layers. The web inspector stays
+read-only; grading, scheduling, and Markdown edits from the web interface remain
+outside this milestone.
 
 ## Decisions still needed
 
-- Where the study interaction lives before a review platform exists and how
-  source reading and answers appear alongside the focused question.
-- How users skip, revisit, and undo an accidental study mark, including focus
-  behavior on an already studied question or the final question in a topic.
-- How to initialize study status for existing collections and questions with
-  prior review history.
-- Whether and how users can return studied questions to the unstudied state.
-  Effects on active review sessions belong to the later review phase.
-- How content changes affect study status without discarding history.
 - Whether future source preparation should recognize prior output
   automatically instead of relying on the first version's user check.
-- Persistence details, including backup and restoration of study progress
-  alongside review history.
+- Automatic backups, portable restoration to a relocated vault, and export
+  of study progress alongside review history.
 
 Scheduling, grading, cross-file review order, and progressive answer reveal
 remain governed by their existing unresolved decisions.

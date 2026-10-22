@@ -8,6 +8,8 @@ A recall question is an ordinary Markdown paragraph beginning with the exact emp
 **Q:** Why can multicollinearity destabilize coefficients without harming prediction?
 <!-- recall:id=123e4567-e89b-42d3-a456-426614174000 -->
 
+**A:**
+
 The answer and evolving notes go here.
 
 ### Geometric interpretation
@@ -35,6 +37,17 @@ An answer begins after the question marker and generated identity comment. It en
 - the end of the file.
 
 Level-three and deeper headings remain part of the answer.
+
+New question templates, numbered imports, and generated source notes place a
+visible `**A:**` label at the start of the answer area. Generated labels occupy
+their own paragraph so lists, code fences, math, and other answer blocks keep
+their normal Markdown structure. Authors may also write `**A:** Answer text`
+on one line.
+
+The leading label is presentation and is excluded from the parsed answer and
+its content hash. Adding it does not change the question's identity or indexed
+content version. Existing answers without a label remain valid. A label inside
+the answer, including one in a code example, remains ordinary answer content.
 
 ## Identity
 
