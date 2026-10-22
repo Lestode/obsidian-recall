@@ -46,8 +46,10 @@ web section or identify the PDF and page, so the user can return to the original
 explanation. Unclear extraction or missing source material needs to be surfaced
 rather than filled with invented answers.
 
-The intended result is a Markdown file, or a small set of topic files, ready to
-place in an existing Recall collection. Identity must be generated and checked
+For the first milestone, each preparation run produces one Markdown note for
+the agreed source scope, with sections and questions in source order. Splitting
+the output across multiple topic files is deferred. The note is ready to place
+in an existing Recall collection. Identity must be generated and checked
 automatically; users should not write UUIDs or repeat folder structure as
 metadata. The exact integration between the skill and Recall tooling remains
 to be designed.
@@ -135,7 +137,8 @@ and the precise layout still need interaction design.
 For [Spinning Up's Key Concepts introduction](https://spinningup.openai.com/en/latest/spinningup/rl_intro.html),
 the proposed output could be a topic note with sections such as States and
 Observations, Policies, and Value Functions, each linked to its source section.
-An example question is: “How does an observation differ from a state?”
+An example question is: “In reinforcement learning, how does an agent's
+observation differ from the environment state?”
 
 The user reads the relevant explanation, returns to the focused question, and
 presses Enter. Its **✓ Studied** marker appears and focus advances. If the user
