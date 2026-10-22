@@ -1,9 +1,9 @@
 # Source preparation and first study
 
-Status: high-level design for source preparation and study tracking. The
-individual study interaction and the need to persist study status are agreed;
-source preparation and storage details below are proposals. Review delivery is
-a later phase. The current read-only implementation remains unchanged.
+Status: first implementation of agent-driven source preparation, with an
+initial pilot awaiting content review. Study tracking remains a high-level
+design; the per-question study interaction is agreed. Review delivery is a
+later phase. The companion service and web inspector remain read-only.
 
 The workflow should let someone provide a PDF or a learning website, receive
 structured Recall notes, study them at their own pace, and store which questions
@@ -29,10 +29,14 @@ stored study status to exclude unstudied questions.
 
 ## Preparing questions from a source
 
-The proposed preparation workflow accepts a PDF or a website and produces notes
-in the existing [Markdown grammar](markdown-grammar.md). A reusable agent skill
-could coordinate source reading, question generation, and validation without
-requiring a separate manual conversion of a pasted list.
+The preparation workflow accepts a PDF or a website and produces notes in the
+existing [Markdown grammar](markdown-grammar.md). The repository-local
+[source preparation skill](../automation/source-preparation/SKILL.md)
+coordinates source reading, question generation, and a validated note writer.
+The user provides the source and destination in conversation; the agent handles
+the intermediate draft and writing without a manual pasted-list conversion.
+This requires an agent with access to the source and local file tools; it is
+not an unattended PDF or website generation service or a new Obsidian button.
 
 The output should follow the source's learning sequence. Filenames supply
 topics, folders supply broader context, and section titles group related
@@ -46,11 +50,34 @@ web section or identify the PDF and page, so the user can return to the original
 explanation. Unclear extraction or missing source material needs to be surfaced
 rather than filled with invented answers.
 
-The intended result is a Markdown file, or a small set of topic files, ready to
-place in an existing Recall collection. Identity must be generated and checked
-automatically; users should not write UUIDs or repeat folder structure as
-metadata. The exact integration between the skill and Recall tooling remains
-to be designed.
+For the first milestone, each preparation run produces one Markdown note for
+the agreed source scope, with sections and questions in source order. Splitting
+the output across multiple topic files is deferred. The user selects a parent
+folder within an existing Recall collection. Generation creates a folder for
+the source beneath that parent and places the new note inside it. Existing
+notes must not be overwritten or modified.
+
+If the source already has generated notes, generation must stop and ask the
+user before creating another copy. It must not silently duplicate the output.
+For this first version, ask the user whether the source already has generated
+notes, including older versions, unless that information is already supplied.
+The writer requires either a declaration of no prior output or confirmation
+of a new independent copy. This is a user check, not automatic recognition of
+URLs, renamed PDFs, or updated source versions. An existing destination folder
+also blocks writing without copy confirmation. Confirmed copies use a new
+numbered folder when necessary; existing folders remain unchanged.
+
+Identity must be generated and checked automatically; users should not write
+UUIDs or repeat folder structure as metadata. The writer generates fresh UUIDs
+and validates the completed Markdown with the shared Recall parser before
+publishing a new file. It rejects content that would split or swallow answers,
+or introduce extra questions or orphan identities. Existing root discovery and
+indexing can consume the resulting note without a converter.
+
+Every newly generated question receives a fresh Recall UUID, including copies
+generated from a previously processed source after user confirmation. Generated
+copies do not inherit another question's study status or review history; they
+begin unstudied. Existing questions, identities, and history remain unchanged.
 
 ## Required question content checks
 
@@ -76,10 +103,12 @@ Before accepting a generated set:
 4. Remove redundant prompts and retain the source's learning progression,
    useful section titles, and references to the relevant explanations.
 
-Validate a small representative section before generating the full source.
-The desired coverage of derivations, code examples, and small details remains
-to be agreed for that source. A successful Markdown parse establishes syntax
-validity; it does not establish question quality or source coverage.
+Use the deep-coverage default in the question-writing guidance; the user can
+review and prune the result. For the initial Spinning Up pilot, validate a
+small representative section before generating the full agreed scope. Routine
+use does not require each user to approve a sample. A successful Markdown parse
+establishes syntax validity; it does not establish question quality or source
+coverage.
 
 ## Study information to store
 
@@ -135,7 +164,8 @@ and the precise layout still need interaction design.
 For [Spinning Up's Key Concepts introduction](https://spinningup.openai.com/en/latest/spinningup/rl_intro.html),
 the proposed output could be a topic note with sections such as States and
 Observations, Policies, and Value Functions, each linked to its source section.
-An example question is: “How does an observation differ from a state?”
+An example question is: “In reinforcement learning, how does an agent's
+observation differ from the environment state?”
 
 The user reads the relevant explanation, returns to the focused question, and
 presses Enter. Its **✓ Studied** marker appears and focus advances. If the user
@@ -162,9 +192,34 @@ content policy.
 
 ## Suggested delivery sequence
 
-1. Define the source preparation instructions using the question-writing
-   guidance. Validate a small sample for standalone meaning, fidelity, source
-   coverage, and compatibility with the existing parser before scaling up.
+### First milestone: source preparation
+
+The first deliverable is one preparation workflow from an agreed PDF or website
+scope to Recall Markdown ready for a collection. It should remove the separate
+step of generating a list and manually converting that list into questions.
+The agent skill supplies the source-reading and question-generation procedure;
+the writer supplies automatic identity, structural validation, and creation of
+one note in a source folder. Source access uses the agent's available reading
+tools. Inaccessible or unreliable extraction must be reported, not presented
+as completed coverage. A bounded Spinning Up draft is included for the pilot.
+
+Acceptance of this milestone would require:
+
+1. An initial Spinning Up pilot sample whose coverage and depth the user
+   validates before generation extends to the full agreed scope. This validates
+   the workflow during development; it is not a mandatory step for every user.
+2. Generated notes that satisfy the [required content checks](#required-question-content-checks)
+   and existing Markdown grammar, including titles, answers, and source
+   references, with identity generated and validated automatically.
+3. Writing only beneath a user-selected folder in an existing Recall
+   collection, with the source-history check, confirmation before copies,
+   automatic fresh identities, and no changes to existing notes or history.
+
+Preparation does not confirm that the user has studied the generated material.
+It must remain usable before study tracking or a review platform is available.
+
+### Subsequent milestones
+
 2. Agree the remaining persistence and interface decisions, then add durable
    per-question study state and the Enter/click interaction. This milestone
    stores what has been studied without requiring a review platform.
@@ -185,10 +240,8 @@ slice into grading, scheduling, or Markdown edits from the web interface.
 - Whether and how users can return studied questions to the unstudied state.
   Effects on active review sessions belong to the later review phase.
 - How content changes affect study status without discarding history.
-- The source preparation skill's scope controls, destination handling,
-  identity integration, and handling of regeneration without duplicates.
-- The desired depth of derivations, code examples, and small details for each
-  source, using a representative sample to agree the approach.
+- Whether future source preparation should recognize prior output
+  automatically instead of relying on the first version's user check.
 - Persistence details, including backup and restoration of study progress
   alongside review history.
 

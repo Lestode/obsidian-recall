@@ -77,12 +77,15 @@ delimiters, and collapses wrapped question or answer lines into a single
 Markdown paragraph. Structured multi-paragraph answers should therefore be
 edited after import rather than expected to retain their pasted line wrapping.
 
-### Future source preparation
+### Agent-driven source preparation
 
-For the future PDF or website preparation workflow, see
-[`source-study-workflow.md`](source-study-workflow.md). It aims to produce
-structured Recall notes directly, without a manual numbered-list conversion.
-The numbered importer above remains the current implementation.
+For PDF or website preparation, use the repository-local
+[source preparation skill](../automation/source-preparation/SKILL.md).
+It produces structured Recall notes directly through an agent and a validated
+writer, without manual numbered-list conversion. The source, selected scope,
+destination, and copy confirmation follow
+[`source-study-workflow.md`](source-study-workflow.md). This is separate from
+the Obsidian commands; numbered import remains available.
 
 ## Agreed extension actions
 
