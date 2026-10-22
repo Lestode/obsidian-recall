@@ -63,7 +63,10 @@ control may need human input even without a documented contradiction.
 Begin with the highest unresolved question about intent or the user experience.
 Investigate mechanics first when needed to understand the options, but bring
 technical details to the human only when they affect the decision. Do not turn
-routine details into individual approval questions or reopen recorded choices.
+routine details into individual approval questions. Do not reopen recorded
+choices without an explicit request, changed goals or constraints, or new
+evidence of a consequential conflict. Explain the reason for reconsideration
+and leave changes to agreed priorities to the human.
 
 ## Report and discuss
 
