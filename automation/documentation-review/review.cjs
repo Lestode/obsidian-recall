@@ -6,7 +6,7 @@ const { join } = require('node:path');
 const identity = require('./identity.json');
 
 const execute = promisify(execFile);
-const MAX_CONTEXT_BYTES = 240_000;
+const MAX_CONTEXT_BYTES = 512_000;
 const MAX_FILES = 100;
 class IncompleteReview extends Error {}
 

@@ -209,9 +209,19 @@ test('a missing Markdown diff produces a visible incomplete result, never a clea
   assert.equal(f.calls.failures.length, 1);
 });
 
+test('input above the former 240 KB cap keeps the complete discussion within 512 KB', async () => {
+  const f = fixture();
+  const body = 'Earlier decision. '.repeat(18_000);
+  f.comments.push({ body });
+  const prompt = await collectContext({ ...f, repo: f.context.repo, question: '' });
+  assert.ok(Buffer.byteLength(prompt) > 240_000);
+  assert.ok(Buffer.byteLength(prompt) <= 512_000);
+  assert.equal(promptData(prompt).discussion.at(-1).body, body);
+});
+
 test('oversized discussion fails explicitly instead of silently dropping context', async () => {
   const f = fixture();
-  f.comments.push({ body: 'x'.repeat(240_001) });
+  f.comments.push({ body: 'x'.repeat(512_001) });
   await assert.rejects(collectContext({ ...f, repo: f.context.repo, question: '' }), /context limit/);
 });
 
@@ -357,7 +367,7 @@ test('large added Markdown fits without repeating its full addition patch', asyn
   assert.equal(data.documents[0].content, content);
   assert.match(data.changes[0].patch, /New Markdown document/);
   assert.doesNotMatch(data.changes[0].patch, /newly proposed rule/);
-  assert.ok(Buffer.byteLength(prompt) < 240_000);
+  assert.ok(Buffer.byteLength(prompt) < 512_000);
 });
 
 test('deleted documents keep every earlier rule in their deletion patches', async () => {
@@ -426,9 +436,9 @@ test('the input cap includes instructions and procedure, not only JSON', async (
   const small = await collectContext({ ...f, repo: f.context.repo, question: '' });
   const dataBytes = Buffer.byteLength(JSON.stringify(promptData(small)));
   const overhead = Buffer.byteLength(small) - dataBytes;
-  f.comments.push({ body: 'x'.repeat(240_000 - dataBytes - Math.floor(overhead / 2)) });
+  f.comments.push({ body: 'x'.repeat(512_000 - dataBytes - Math.floor(overhead / 2)) });
   await assert.rejects(collectContext({ ...f, repo: f.context.repo, question: '' }),
-    /complete review input is \d+ bytes, exceeding the 240000-byte context limit/);
+    /complete review input is \d+ bytes, exceeding the 512000-byte context limit/);
 });
 
 

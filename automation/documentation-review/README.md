@@ -40,7 +40,7 @@ The [loop policy convention](../README.md) applies. This loop's policy is:
 | Command on a closed or merged PR | Post a short explanation and direct further discussion to an open PR; do not run Codex |
 | Push or commit | No automatic run; request another review when useful |
 | Public repository, bot, or user without write access | Do not run |
-| Input and runtime | At most 100 changed files, 100 Markdown documents per revision, 240 KB for the complete prompt, and ten minutes for Codex |
+| Input and runtime | At most 100 changed files, 100 Markdown documents per revision, 512 KB (512,000 bytes) for the complete prompt, and ten minutes for Codex |
 | Limit exceeded or execution failure | Report an incomplete result; use the Actions job as fallback if authorization or posting is unavailable |
 
 Post a new comment beginning `/review-docs` in an open PR's **Conversation** tab
@@ -109,10 +109,10 @@ branch since the PR branched is supplied as accepted-version overrides, so newly
 second complete snapshot. Identical text references its supplied copy. The
 collector checks that the PR did not move while it retrieved the input.
 
-The 240 KB limit includes instructions, the review procedure, and serialized
-source material. Actions logs show the input size without printing its content;
-limit errors report both the actual size and the cap. This is a local input
-budget, not a model-reported context-window limit.
+The 512 KB (512,000 bytes) limit includes instructions, the review procedure,
+and serialized source material. Actions logs show the input size without
+printing its content; limit errors report both the actual size and the cap.
+This is a local input budget, not a model-reported context-window limit.
 
 The wrapper starts a fresh ephemeral review for each request and removes its
 temporary directory afterward. It does not accumulate earlier repository
