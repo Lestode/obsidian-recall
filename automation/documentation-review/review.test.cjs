@@ -19,11 +19,14 @@ function fixture() {
     number: 7, state: 'open', title: 'Clarify a rule', body: 'Intent', changed_files: 1,
     base: { sha: 'accepted' }, head: { sha: 'proposed' },
   };
-  const files = [{ filename: 'docs/README.md', status: 'modified', patch: '-Old rule\n+New rule' }];
+  const files = [{ filename: 'docs/README.md', status: 'modified', additions: 1, deletions: 1, patch: '@@ -1 +1 @@\n-Original governing rule\n+Proposed changed rule' }];
   const comments = [{ body: 'Earlier decision', created_at: '2026-01-01', user: { login: 'author' } }];
   const github = {
     rest: {
-      repos: { getCollaboratorPermissionLevel: async () => ({ data: { permission: 'write' } }) },
+      repos: {
+        getCollaboratorPermissionLevel: async () => ({ data: { permission: 'write' } }),
+        compareCommitsWithBasehead: async () => ({ data: { merge_base_commit: { sha: 'accepted' } } }),
+      },
       pulls: {
         get: async () => ({ data: pull }), listFiles: 'files',
         listReviewComments: 'inline', listReviews: 'reviews',
@@ -307,4 +310,164 @@ process.stdin.resume();
     else process.env.REVIEW_CODEX_BIN = previous;
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+function promptData(prompt) {
+  return JSON.parse(prompt.slice(prompt.lastIndexOf('\n\n') + 2));
+}
+
+test('one latest snapshot supplies unchanged documents once and keeps earlier rules in diffs', async () => {
+  const f = fixture();
+  f.files[0].filename = 'docs/rule.md';
+  const reads = [];
+  const shared = 'Unchanged governing context. '.repeat(3000);
+  f.github.rest.git.getTree = async ({ tree_sha }) => {
+    reads.push(`tree:${tree_sha}`);
+    assert.equal(tree_sha, 'proposed');
+    return { data: { tree: [
+      { type: 'blob', path: 'docs/README.md', sha: 'shared' },
+      { type: 'blob', path: 'docs/rule.md', sha: 'proposed' },
+    ] } };
+  };
+  f.github.rest.git.getBlob = async ({ file_sha }) => {
+    reads.push(`blob:${file_sha}`);
+    const content = file_sha === 'shared' ? shared : 'Proposed changed rule';
+    return { data: { content: Buffer.from(content).toString('base64'), encoding: 'base64', size: Buffer.byteLength(content) } };
+  };
+  const prompt = await collectContext({ ...f, repo: f.context.repo, question: '' });
+  const data = promptData(prompt);
+  assert.equal(data.documents.length, 2);
+  assert.equal(data.documents[0].content, shared);
+  assert.equal(prompt.split(shared).length - 1, 1);
+  assert.equal(data.accepted, undefined);
+  assert.equal(data.proposed, undefined);
+  assert.ok(data.changes[0].patch.includes('-Original governing rule'));
+  assert.deepEqual(reads, ['tree:proposed', 'blob:shared', 'blob:proposed']);
+});
+
+test('large added Markdown fits without repeating its full addition patch', async () => {
+  const f = fixture();
+  const content = 'A newly proposed rule.\n'.repeat(5000);
+  f.files[0] = { filename: 'docs/README.md', status: 'added', additions: 5000, deletions: 0 };
+  f.github.rest.git.getBlob = async () => ({ data: {
+    content: Buffer.from(content).toString('base64'), encoding: 'base64', size: Buffer.byteLength(content),
+  } });
+  const prompt = await collectContext({ ...f, repo: f.context.repo, question: '' });
+  const data = promptData(prompt);
+  assert.equal(data.documents[0].content, content);
+  assert.match(data.changes[0].patch, /New Markdown document/);
+  assert.doesNotMatch(data.changes[0].patch, /newly proposed rule/);
+  assert.ok(Buffer.byteLength(prompt) < 240_000);
+});
+
+test('deleted documents keep every earlier rule in their deletion patches', async () => {
+  const f = fixture();
+  f.files[0] = { filename: 'docs/deleted.md', status: 'removed', additions: 0, deletions: 2,
+    patch: '@@ -1,2 +0,0 @@\n-Original governing rule\n-Never reset progress.' };
+  const data = promptData(await collectContext({ ...f, repo: f.context.repo, question: '' }));
+  assert.ok(data.documents.every(document => document.path !== 'docs/deleted.md'));
+  assert.match(data.changes[0].patch, /-Never reset progress\./);
+});
+
+for (const path of ['docs/renamed.md', 'docs/renamed.txt']) {
+  test(`path-only rename to ${path} keeps one content copy and both paths`, async () => {
+    const f = fixture();
+    f.files[0] = { filename: path, previous_filename: 'docs/old.md', status: 'renamed', additions: 0, deletions: 0 };
+    f.github.rest.git.getTree = async () => ({ data: { tree: [
+      { type: 'blob', path: 'docs/README.md', sha: 'index' }, { type: 'blob', path, sha: 'rule' },
+    ] } });
+    const data = promptData(await collectContext({ ...f, repo: f.context.repo, question: '' }));
+    assert.equal(data.changes[0].previousPath, 'docs/old.md');
+    assert.match(data.changes[0].patch, /Path-only rename/);
+    assert.ok(data.documents.some(document => document.path === path));
+  });
+}
+
+test('modified renames retain their complete diff, including no-newline markers', async () => {
+  const f = fixture();
+  f.files[0] = { filename: 'docs/README.md', previous_filename: 'docs/old.md', status: 'renamed', additions: 2, deletions: 2,
+    patch: '@@ -1,2 +1,2 @@\n-Old rule\n-Removed qualification\n+New rule\n+New qualification\n\\ No newline at end of file' };
+  const data = promptData(await collectContext({ ...f, repo: f.context.repo, question: '' }));
+  assert.equal(data.changes[0].patch, f.files[0].patch);
+});
+
+for (const patch of [
+  '@@ -1,2 +1,2 @@\n-Original governing rule\n+Proposed changed rule',
+  '@@ -1 +1 @@\n-Original governing rule',
+  '-Original governing rule\n+Proposed changed rule',
+]) {
+  test(`incomplete Markdown patch stops the model: ${patch.split('\n')[0]}`, async () => {
+    const f = fixture(); f.files[0].patch = patch;
+    await run(f);
+    assert.equal(f.calls.reviews.length, 0);
+    assert.match(f.calls.responses[0].body, /omitted or truncated a Markdown patch/);
+    assert.equal(f.calls.failures.length, 1);
+  });
+}
+
+test('Markdown change totals must account for all changed lines', async () => {
+  const f = fixture(); f.files[0].additions = 2;
+  await assert.rejects(collectContext({ ...f, repo: f.context.repo, question: '' }), /truncated a Markdown patch/);
+});
+
+test('the Markdown file list must agree with the latest tree', async () => {
+  const f = fixture(); f.files[0].filename = 'docs/missing.md';
+  await assert.rejects(collectContext({ ...f, repo: f.context.repo, question: '' }), /tree disagree/);
+});
+
+test('a push during collection cannot produce a mixed-revision review', async () => {
+  const f = fixture();
+  f.github.rest.pulls.get = async () => ({ data: { ...f.pull, head: { sha: 'later' } } });
+  await assert.rejects(collectContext({ ...f, repo: f.context.repo, question: '' }), /PR changed while collecting context/);
+});
+
+test('the input cap includes instructions and procedure, not only JSON', async () => {
+  const f = fixture();
+  const small = await collectContext({ ...f, repo: f.context.repo, question: '' });
+  const dataBytes = Buffer.byteLength(JSON.stringify(promptData(small)));
+  const overhead = Buffer.byteLength(small) - dataBytes;
+  f.comments.push({ body: 'x'.repeat(240_000 - dataBytes - Math.floor(overhead / 2)) });
+  await assert.rejects(collectContext({ ...f, repo: f.context.repo, question: '' }),
+    /complete review input is \d+ bytes, exceeding the 240000-byte context limit/);
+});
+
+
+test('rules accepted on a diverged target remain available without another full snapshot', async () => {
+  const f = fixture();
+  const comparisons = [];
+  f.github.rest.repos.compareCommitsWithBasehead = async ({ basehead }) => {
+    comparisons.push(basehead);
+    return { data: basehead === 'accepted...proposed'
+      ? { merge_base_commit: { sha: 'common' } }
+      : { files: [
+        { filename: 'docs/new-target-rule.md', status: 'added', sha: 'target-rule' },
+        { filename: 'docs/deleted.md', status: 'removed' },
+        { filename: 'docs/renamed.md', previous_filename: 'docs/old.md', status: 'renamed', sha: 'proposed' },
+        { filename: 'code.cjs', status: 'modified', sha: 'code' },
+      ] } };
+  };
+  const getBlob = f.github.rest.git.getBlob;
+  f.github.rest.git.getBlob = async args => args.file_sha === 'target-rule'
+    ? { data: { content: Buffer.from('Newly agreed target rule').toString('base64'), encoding: 'base64', size: 23 } }
+    : getBlob(args);
+  const data = promptData(await collectContext({ ...f, repo: f.context.repo, question: '' }));
+  assert.deepEqual(comparisons, ['accepted...proposed', 'common...accepted']);
+  assert.equal(data.proposal.mergeBase, 'common');
+  assert.equal(data.documents.length, 1);
+  assert.equal(data.acceptedTargetUpdates[0].content, 'Newly agreed target rule');
+  assert.equal(data.acceptedTargetUpdates[1].status, 'removed');
+  assert.equal(data.acceptedTargetUpdates[2].documentPath, 'docs/README.md');
+  assert.equal(data.acceptedTargetUpdates[2].content, undefined);
+  assert.equal(data.acceptedTargetUpdates.length, 3);
+});
+
+test('possibly truncated target changes cannot silently lose accepted rules', async () => {
+  const f = fixture();
+  f.github.rest.repos.compareCommitsWithBasehead = async ({ basehead }) => ({ data:
+    basehead === 'accepted...proposed' ? { merge_base_commit: { sha: 'common' } }
+      : { files: Array.from({ length: 300 }, () => ({ filename: 'docs/rule.md' })) },
+  });
+  await run(f);
+  assert.equal(f.calls.reviews.length, 0);
+  assert.match(f.calls.responses[0].body, /Target-branch changes are incomplete/);
 });
