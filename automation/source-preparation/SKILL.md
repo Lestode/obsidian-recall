@@ -1,13 +1,13 @@
 ---
 name: source-preparation
-description: Turn a supplied PDF or learning website into a new Recall note with source-grounded questions, answers, references, and automatic identity. Use when preparing study questions from a source, not for scheduling or recording study progress.
+description: Turn a supplied PDF or learning website into Recall notes with source-grounded questions, answers, references, and automatic identity. Use when preparing study questions from a source, not for scheduling or recording study progress.
 ---
 
 # Source preparation
 
 Follow [the source workflow](../../docs/source-study-workflow.md) and
 [question-writing guidance](../../docs/question-writing.md). Deliver an ordinary
-Recall note, not a question list that the user must manually convert. The agent
+set of Recall notes, not a question list that the user must manually convert. The agent
 handles reading, drafting, and the writer invocation within the user's request.
 
 ## Establish the source and destination
@@ -53,7 +53,18 @@ Create an agent-owned temporary JSON draft using
   A website location is an HTTP(S) URL. A PDF location is an absolute local
   path or HTTP(S) URL. Do not copy or move the original PDF.
 - `title`: the topic filename and level-one title. Sections contain `title` and
-  a nonempty `questions` array in learning order.
+  a nonempty `questions` array in learning order. This original single-note
+  draft remains supported for short sources.
+- For a book, instead of top-level `title` and `sections`, supply a nonempty
+  `notes` array in source order. Each note has `title`, `sections`, an optional
+  note-specific `scope`, and an optional relative `.md` `path` beneath the source
+  folder. Default to one note per chapter and substantive appendix; retain
+  section headings. The writer numbers filenames when `path` is omitted.
+  Keep each whole chapter in one note so its progress covers that chapter.
+  Optional paths support `Appendices/` and source topic folders; they must not
+  traverse directories or collide, including after case/Unicode normalization.
+  Do not mix the single-note and multi-note formats. Validate coverage across
+  files as well as within each file.
 - Each question has a single-line `prompt`, Markdown `answer`, and nonempty
   `references`. Website references have `url` and an optional `label`; PDF
   references have `page`, a one-based physical PDF page number.
@@ -74,16 +85,26 @@ overwrites an existing folder or reuses question identities. Do not retry with
 copy confirmation merely to bypass a collision error.
 
 `--draft /path/to/draft.json --preview` renders and validates without writing.
-The helper validates the complete note with the shared Recall parser and
-creates it inside a new source folder under the selected parent. Correct a
+The helper validates every note with the shared Recall parser before creating
+one new source folder under the selected parent. Preview of multiple notes
+returns JSON containing their paths, Markdown, and question counts. Correct a
 rejected draft before publishing. Structural validation does not establish
 semantic fidelity, standalone meaning, or source coverage; those are the
 agent's content checks above.
 
+If the user requests chapters before the whole book is ready, publish a checked
+batch and clearly report partial coverage. To continue the same preparation,
+use `--draft /path/to/remaining.json --append-to "/vault/collection/source"`.
+Supply explicit note paths so numbering continues correctly. This validates the
+whole new batch and adds only absent files; existing notes and identities remain
+unchanged. Do not use continuation to replace earlier versions or bypass the
+source-history check for an independent preparation. Check complete coverage
+across all batches before reporting completion.
+
 ## Report the result
 
-Return the new note path, question count, covered scope, and any actual content
+Return the source folder, note paths, question count, covered scope, and any actual content
 limitations concisely. Provide a short coverage summary, with detailed mappings
 available when useful. Report partial reading or failed writing explicitly;
-an intermediate draft alone is not a completed note. No study status, review
+an intermediate draft alone is not a completed source. No study status, review
 events, scheduling policy, or existing history is written by this workflow.

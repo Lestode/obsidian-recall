@@ -49,9 +49,11 @@ test("Obsidian study API checks vault, identity, current content and state; leav
     assert.ok(saved.studiedAt);
     assert.equal((await post()).status, 409);
     await writeFile(note, markdown.replace("selection rule.", "distribution."));
+    assert.equal((await (await fetch(`${origin}/api/study?file=Course/Chapter.md`, { headers })).json()).synchronized, false);
     assert.equal((await post({ ...request, studied: false, expectedRevision: saved.revision })).status, 409);
     assert.deepEqual(database.getStudyState(question.id), saved);
     await synchronizer.reconcileFull();
+    assert.equal((await (await fetch(`${origin}/api/study?file=Course/Chapter.md`, { headers })).json()).synchronized, true);
     const edited = database.getStudyState(question.id)!;
     assert.equal(edited.contentChanged, true);
     assert.equal(edited.studiedAt, saved.studiedAt);
@@ -61,10 +63,64 @@ test("Obsidian study API checks vault, identity, current content and state; leav
     // Invalid files retain old indexed content but cannot accept study writes.
     await writeFile(note, `${markdown}\n${markdown}`);
     await synchronizer.reconcileFull();
+    assert.equal((await (await fetch(`${origin}/api/study?file=Course/Chapter.md`, { headers })).json()).synchronized, false);
     assert.equal((await post({ ...undo, expectedRevision: database.getStudyState(question.id)!.revision })).status, 409);
     assert.equal((await readFile(note, "utf8")), `${markdown}\n${markdown}`);
     assert.equal(database.connection.prepare("SELECT COUNT(*) AS n FROM review_events").get()?.n, 0);
     assert.equal((await scanVault(vault)).diagnostics[0]?.kind, "duplicate-identity");
+  } finally {
+    synchronizer.stop(); server.closeAllConnections();
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+    database.close(); await rm(vault, { recursive: true, force: true });
+  }
+});
+
+test("whole-note study snapshots detect additions, missing IDs, moves and deletions before claiming completion", async () => {
+  const vault = await mkdtemp(path.join(os.tmpdir(), "recall-note-progress-"));
+  await mkdir(path.join(vault, "Course"));
+  await writeFile(path.join(vault, "Course/_recall.md"), "# Course\n");
+  const one = "**Q:** In RL, what is a policy?\n<!-- recall:id=123e4567-e89b-42d3-a456-426614174000 -->\n\n**A:** A rule for actions.\n";
+  const two = "**Q:** In RL, what is a reward?\n<!-- recall:id=123e4567-e89b-42d3-a456-426614174001 -->\n\n**A:** A scalar signal.\n";
+  const file = "Course/Chapter.md";
+  await writeFile(path.join(vault, file), one);
+  const database = new RecallDatabase(":memory:");
+  const synchronizer = new RecallSynchronizer(vault, database, 250, 0);
+  await synchronizer.reconcileFull();
+  const server = createRecallServer({ database, synchronizer, webRoot: "", vaultName: "Test" });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const headers = { "x-recall-client": "obsidian", "x-recall-vault": encodeURIComponent(vault) };
+  const get = async (note = file) => (await (await fetch(`${origin}/api/study?file=${encodeURIComponent(note)}`, { headers })).json()) as {
+    states: { questionId: string; studiedAt: string | null }[]; synchronized: boolean;
+  };
+  try {
+    const question = database.listQuestions()[0]!;
+    database.setStudied({ questionId: question.id, filePath: file, contentHash: question.contentHash, studied: true, expectedRevision: null });
+    assert.equal((await get()).synchronized, true);
+    assert.ok((await get()).states.every(state => state.studiedAt));
+    await writeFile(path.join(vault, file), one + "\n" + two);
+    assert.equal((await get()).synchronized, false);
+    await synchronizer.reconcileFull();
+    assert.equal((await get()).synchronized, true);
+    assert.equal((await get()).states.length, 2);
+    assert.equal((await get()).states.filter(state => state.studiedAt).length, 1);
+    await writeFile(path.join(vault, file), one + "\n**Q:** A question without identity?\n\n**A:** Not valid.\n");
+    await synchronizer.reconcileFull();
+    assert.equal((await get()).synchronized, false);
+    await writeFile(path.join(vault, file), one);
+    await writeFile(path.join(vault, "Course/Moved.md"), two);
+    await synchronizer.reconcileFull();
+    assert.equal((await get()).synchronized, true);
+    assert.equal((await get()).states.length, 1);
+    assert.ok((await get()).states[0]!.studiedAt);
+    assert.equal((await get("Course/Moved.md")).states[0]!.studiedAt, null);
+    await writeFile(path.join(vault, "Course/Moved.md"), "# Empty\n");
+    assert.equal((await get("Course/Moved.md")).synchronized, false);
+    await synchronizer.reconcileFull();
+    assert.equal((await get("Course/Moved.md")).synchronized, true);
+    assert.deepEqual((await get("Course/Moved.md")).states, []);
+    assert.equal((await get("../outside.md")).synchronized, false);
+    assert.equal((await get("/absolute.md")).synchronized, false);
   } finally {
     synchronizer.stop(); server.closeAllConnections();
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));

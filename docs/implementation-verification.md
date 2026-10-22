@@ -52,13 +52,13 @@ explicitly listed as unresolved in
 - The agent skill routes PDF or website reading through available source
   tools, applies the canonical question-writing checks, and uses the local
   writer rather than asking the user to convert a list or manage UUIDs.
-- The writer creates one note in a new source folder under an existing Recall
-  collection. It requires the user's prior-output declaration or confirmation
+- The writer creates one or more notes in a new source folder under an existing Recall
+  collection. A new preparation requires the user's prior-output declaration or confirmation
   of another independent copy; automatic source/version matching is not claimed.
 - Fresh identities are generated and completed prompts and answers round-trip
   through the shared parser. Boundary-changing headings, extra questions,
   orphan identities, and unclosed fences are rejected before vault writes.
-- The note is published as a complete file without replacement. Tests cover
+- Every note is published as a complete file without replacement. Tests cover
   confirmed-copy naming, concurrent creation, occupied symlinks, preserved
   existing notes, PDF page references, and indexing through the real scanner.
 - A live reading of Spinning Up's States and Observations section produced the
@@ -122,6 +122,28 @@ pilot, not human content acceptance or coverage of the full introduction.
   error is inspectable and recoverable through manual rescan.
 
 ## First study in Obsidian
+
+Chapter preparation and completion extension (October 2026):
+
+- Multi-note preparation validates the whole publication batch before writing,
+  numbers chapter filenames, supports appendix subfolders, and retains
+  the original single-note format. Tests cover scanner round-trips, fresh IDs
+  across confirmed source copies, late invalid chapters, path/case/Unicode
+  collisions, filesystem publication failure cleanup, and CLI previews.
+- Explicit staged continuation adds only absent paths to the selected source
+  folder. Tests cover preserved published bytes and identities, late occupied
+  paths, case variants, symlink refusal, cleanup that retains existing files and
+  directories, and the separate CLI destination mode.
+- Note progress appears in Obsidian's file list and open-note header. It uses
+  confirmed per-question marks, with empty notes hidden and changed-content
+  notices retained. Whole-note disk/index checks prevent invalid or stale
+  snapshots from appearing complete.
+- An isolated Obsidian 1.14.4 profile verified zero/partial/full progress in both
+  locations, undo, new questions, changed content, renaming, empty notes,
+  offline/reconnection, app reload, one label per location, unchanged editable
+  title text, no Markdown changes from study, and no renderer errors.
+- The full 121-test suite, production build, and TypeScript check passed.
+  These checks do not establish semantic coverage of any generated book notes.
 
 - Existing and generated questions all start Not studied, even with review
   history. Only an explicit per-question action writes study state.
