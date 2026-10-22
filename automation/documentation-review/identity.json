@@ -2,5 +2,7 @@
   "name": "Documentation reviewer",
   "purpose": "Check proposed changes against project intent and rules, and identify contradictions, missing requirements, and harmful duplication.",
   "engine": "Codex",
+  "model": "gpt-6.1-sol",
+  "reasoningEffort": "high",
   "execution": "local"
 }

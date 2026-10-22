@@ -1,9 +1,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { run, collectContext, parseCommand, codexEnvironment } = require('./review.cjs');
+const { mkdtemp, writeFile, readFile, rm } = require('node:fs/promises');
+const { tmpdir } = require('node:os');
+const { join } = require('node:path');
+const { run, runCodex, collectContext, parseCommand, codexEnvironment } = require('./review.cjs');
 
 function fixture() {
-  const calls = { reviews: [], responses: [], failures: [] };
+  const calls = { reviews: [], responses: [], failures: [], summaries: [], warnings: [] };
   const context = {
     repo: { owner: 'owner', repo: 'private-repo' },
     payload: {
@@ -47,7 +50,11 @@ function fixture() {
   };
   return {
     github, context, pull, files, comments, calls,
-    core: { setFailed: message => calls.failures.push(message) },
+    core: {
+      setFailed: message => calls.failures.push(message),
+      warning: message => calls.warnings.push(message),
+      summary: { addRaw: body => ({ write: async () => { calls.summaries.push(body); } }) },
+    },
     review: async prompt => { calls.reviews.push(prompt); return 'A concrete finding.'; },
   };
 }
@@ -199,4 +206,60 @@ test('posting failure falls back to a failed Actions job', async () => {
   assert.equal(f.calls.reviews.length, 1);
   assert.equal(f.calls.failures.length, 1);
   assert.match(f.calls.failures[0], /could not accept/);
+  assert.equal(f.calls.summaries.length, 1);
+  assert.match(f.calls.summaries[0], /A concrete finding/);
+  assert.match(f.calls.failures[0], /report is available/);
+});
+
+test('publication diagnostics expose HTTP status without request secrets or raw error text', async () => {
+  const f = fixture();
+  f.github.rest.issues.createComment = async () => {
+    throw Object.assign(new Error('private-api-response'), {
+      status: 403, request: { headers: { authorization: 'secret-token' } },
+    });
+  };
+  await run(f);
+  assert.match(f.calls.failures[0], /HTTP 403/);
+  assert.doesNotMatch(JSON.stringify(f.calls), /secret-token|private-api-response/);
+  assert.match(f.calls.summaries[0], /A concrete finding/);
+});
+
+test('a lost summary plus failed publication does not falsely claim the report was saved', async () => {
+  const f = fixture();
+  f.core.summary.addRaw = () => ({ write: async () => { throw new Error('Unavailable'); } });
+  f.github.rest.issues.createComment = async () => { throw new Error('Unavailable'); };
+  await run(f);
+  assert.equal(f.calls.warnings.length, 1);
+  assert.match(f.calls.failures[0], /could not be saved/);
+});
+
+test('the Codex subprocess receives the approved model and high reasoning effort', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'recall-codex-test-'));
+  const capture = join(directory, 'arguments.json');
+  const binary = join(directory, 'fake-codex.cjs');
+  const previous = process.env.REVIEW_CODEX_BIN;
+  await writeFile(binary, `#!/usr/bin/env node
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+if (args[0] === 'login') { console.log('Logged in using ChatGPT'); process.exit(0); }
+fs.writeFileSync(${JSON.stringify(capture)}, JSON.stringify(args));
+fs.writeFileSync(args[args.indexOf('--output-last-message') + 1], 'A review.');
+process.stdin.resume();
+`, { mode: 0o700 });
+  process.env.REVIEW_CODEX_BIN = binary;
+  try {
+    assert.equal(await runCodex('Review the proposal.'), 'A review.');
+    const args = JSON.parse(await readFile(capture, 'utf8'));
+    assert.equal(args[args.indexOf('--model') + 1], 'gpt-6.1-sol');
+    assert.ok(args.includes('model_reasoning_effort="high"'));
+    assert.equal(args[args.indexOf('--sandbox') + 1], 'read-only');
+    const f = fixture();
+    await run(f);
+    assert.match(f.calls.responses[0].body, /Model:\*\* gpt-6.1-sol/);
+    assert.match(f.calls.responses[0].body, /Reasoning effort:\*\* high/);
+  } finally {
+    if (previous === undefined) delete process.env.REVIEW_CODEX_BIN;
+    else process.env.REVIEW_CODEX_BIN = previous;
+    await rm(directory, { recursive: true, force: true });
+  }
 });
