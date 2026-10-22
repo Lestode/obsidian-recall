@@ -50,10 +50,38 @@ and the read-only inspection phase; the decisions explicitly listed as unresolve
   collection, and all five questions indexed into SQLite without diagnostics.
   Pilot content acceptance remains with the user; this is not full-course
   coverage or a test of every PDF extraction tool.
-- The source skill validator, TypeScript check, and full 86-test suite passed.
-  An initial suite run encountered an existing synchronization timeout; that
-  test passed separately and the full rerun passed. No synchronization code
-  was changed.
+- A source-reference follow-up found that the inspector's sanitizer removed
+  local `file:` link destinations. Local PDF references now use a read-only
+  service route after checking real Markdown links in the indexed answer and
+  the source's PDF header. Requests for unlinked files, code examples, non-PDF
+  content, remote file hosts, missing files, or unknown questions return 404.
+- A headless Chrome check generated a three-page PDF fixture and both source
+  notes in a temporary collection, started the real synchronizer and service,
+  and verified all six questions in the rendered inspector. Clicking the PDF
+  reference returned the unchanged original PDF with `#page=3` retained in the
+  browser URL. Website section links, math, lists, and script sanitization also
+  passed. This does not independently verify Obsidian's external-file handling
+  or every PDF viewer's page positioning.
+- The source skill validator, TypeScript check, full 91-test suite, and build
+  passed. No synchronization code was changed.
+
+### Pilot coverage evidence
+
+The [five-question pilot](../automation/source-preparation/examples/spinning-up.json)
+was checked against the live [States and Observations section](https://spinningup.openai.com/en/latest/spinningup/rl_intro.html#states-and-observations)
+on 2026-10-22. The section's substantive ideas map to the draft as follows:
+
+| Source idea | Pilot question | Fidelity check |
+|---|---|---|
+| Complete state versus potentially incomplete observation | 1 | Preserves the information distinction |
+| Numerical representations in deep RL | 2 | Includes vectors, matrices, and higher-order tensors |
+| Visual and robot examples | 3 | Retains RGB pixels and joint position/velocity examples |
+| Full and partial observability | 4 | Distinguishes complete from partial information |
+| State notation used when only observations are available | 5 | Preserves the notation caveat and actual conditioning |
+
+No substantive idea in this bounded section was deliberately omitted. It has
+no derivation or code example to cover. This is evidence for inspecting the
+pilot, not human content acceptance or coverage of the full introduction.
 
 ## Synchronization and storage
 

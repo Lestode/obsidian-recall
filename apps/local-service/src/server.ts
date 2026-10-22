@@ -4,6 +4,7 @@ import { createServer, type Server, type ServerResponse } from "node:http";
 import path from "node:path";
 import type { RecallDatabase } from "@recall/database";
 import type { RecallSynchronizer, SyncEvent } from "./synchronizer";
+import { openSourcePdf } from "./source-pdf";
 
 const STATIC_FILES: Record<string, { file: string; type: string }> = {
   "/": { file: "index.html", type: "text/html; charset=utf-8" },
@@ -67,6 +68,31 @@ export function createRecallServer(options: {
     if (request.method === "POST" && url.pathname === "/api/rescan") {
       synchronizer.requestFullReconcile();
       json(response, { accepted: true, revision: database.revision() }, 202);
+      return;
+    }
+    const pdfRoute = /^\/api\/questions\/([^/]+)\/source-pdf$/.exec(url.pathname);
+    if (request.method === "GET" && pdfRoute) {
+      const question = database.getQuestion(pdfRoute[1]!);
+      try {
+        const file = question && await openSourcePdf(question.answer, url.searchParams.get("source") ?? "");
+        if (file) {
+          response.writeHead(200, {
+            "content-type": "application/pdf",
+            "content-length": (await file.stat()).size,
+            "content-disposition": "inline",
+            "cache-control": "no-store",
+            "x-content-type-options": "nosniff",
+          });
+          const stream = file.createReadStream({ start: 0 });
+          stream.on("error", () => response.destroy());
+          response.on("close", () => stream.destroy());
+          stream.pipe(response);
+          return;
+        }
+      } catch {
+        // Keep unavailable sources local and avoid exposing filesystem errors.
+      }
+      json(response, { error: "PDF source unavailable." }, 404);
       return;
     }
     if (request.method === "GET" && url.pathname.startsWith("/api/questions/")) {

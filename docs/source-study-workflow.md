@@ -50,6 +50,14 @@ web section or identify the PDF and page, so the user can return to the original
 explanation. Unclear extraction or missing source material needs to be surfaced
 rather than filled with invented answers.
 
+Local PDF references remain ordinary `file:` links with physical page numbers
+in Markdown. In the browser inspector, these links open the original PDF
+through the local service while retaining the page fragment. The service only
+reads local PDF files linked from that indexed question's answer; it does not
+accept arbitrary filesystem paths or copy the source into the collection.
+Missing or unreadable sources return an unavailable-source response. HTTP(S)
+source links continue to open directly.
+
 For the first milestone, each preparation run produces one Markdown note for
 the agreed source scope, with sections and questions in source order. Splitting
 the output across multiple topic files is deferred. The user selects a parent

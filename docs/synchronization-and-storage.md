@@ -289,6 +289,13 @@ recovery events. Prompts and answers are rendered as sanitized Markdown with
 math support. Validation diagnostics remain visible against the last successful
 database revision.
 
+Local PDF links in answers use a read-only source route scoped to the indexed
+question. The service verifies that the requested file is an actual PDF linked
+from that answer, and the inspector preserves its physical-page fragment.
+Other filesystem paths are not exposed. This implements the source-reference
+behavior in [source preparation](source-study-workflow.md) without changing
+the Markdown or copying source files.
+
 ## Failure and recovery behaviour
 
 - A parse or validation failure preserves the affected file's last successful

@@ -65,6 +65,22 @@ test('PDF questions require physical page references and produce navigable sourc
   }
 });
 
+test('the inspector maps local PDF sources to the indexed question while retaining physical pages', async () => {
+  const { inspectorSourceLink } = await import('../../apps/review-web/src/source-links.js');
+  const href = 'file:///tmp/A%20source%20%C3%BC.pdf#page=3';
+  const result = new URL(inspectorSourceLink(href, 'question-id'), 'http://127.0.0.1');
+  assert.equal(result.pathname, '/api/questions/question-id/source-pdf');
+  assert.equal(result.searchParams.get('source'), 'file:///tmp/A%20source%20%C3%BC.pdf');
+  assert.equal(result.hash, '#page=3');
+  for (const unchanged of [
+    'https://example.org/source.pdf#page=3', 'https://example.org/lesson#definition',
+    'file:///tmp/notes.txt', 'file://remote/Share/source.pdf', 'javascript:alert(1)',
+  ]) {
+    assert.equal(inspectorSourceLink(unchanged, 'question-id'), unchanged);
+  }
+  assert.equal(inspectorSourceLink(href), href);
+});
+
 test('content that loses answer boundaries is rejected before any destination is created', async t => {
   const { parent } = await fixture(t);
   for (const answer of [
