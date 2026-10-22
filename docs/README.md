@@ -41,6 +41,11 @@ The Obsidian authoring layer currently supports:
 6. Detect missing or duplicated identity.
 7. Import numbered question lists with optional `A:` answers.
 
+An additional agent-driven source preparation workflow reads PDFs or websites
+and creates a new, parser-validated Recall note with automatic identity. See
+[`source-study-workflow.md`](source-study-workflow.md) and the
+[source preparation skill](../automation/source-preparation/SKILL.md).
+
 The current companion-service phase adds:
 
 1. A shared parser used by the plugin and local service.
@@ -53,12 +58,11 @@ The current companion-service phase adds:
 
 Scheduling, grading, and writable review workflows remain later phases.
 
-The future source preparation and first-study design is described in
+The source preparation implementation and future first-study design are described in
 [`source-study-workflow.md`](source-study-workflow.md). It records the agreed
 per-question study action and the information to store before a review platform
-exists, separately from proposals and open decisions. These features are not
-part of the current implementation; consuming study status for recall comes
-later.
+exists, separately from proposals and open decisions. Study tracking is not
+implemented; consuming study status for recall comes later.
 
 ## Change process
 

@@ -12,5 +12,5 @@
     "allowSyntheticDefaultImports": true,
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["apps/**/*.ts", "packages/**/*.ts"]
+  "include": ["apps/**/*.ts", "packages/**/*.ts", "automation/source-preparation/**/*.ts"]
 }

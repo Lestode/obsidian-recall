@@ -1,0 +1,39 @@
+{
+  "source": {
+    "kind": "website",
+    "title": "Spinning Up",
+    "location": "https://spinningup.openai.com/en/latest/spinningup/rl_intro.html",
+    "scope": "States and Observations only; initial content pilot, not the entire introduction."
+  },
+  "title": "States and Observations",
+  "sections": [{
+    "title": "States and Observations",
+    "questions": [
+      {
+        "prompt": "In reinforcement learning, how does an observation differ from the environment state?",
+        "answer": "The state describes the world completely. An observation can leave out some of that information.",
+        "references": [{ "url": "https://spinningup.openai.com/en/latest/spinningup/rl_intro.html#states-and-observations" }]
+      },
+      {
+        "prompt": "In deep reinforcement learning, which numerical structures commonly represent states and observations?",
+        "answer": "Real-valued vectors, matrices, or tensors of higher order.",
+        "references": [{ "url": "https://spinningup.openai.com/en/latest/spinningup/rl_intro.html#states-and-observations" }]
+      },
+      {
+        "prompt": "In reinforcement learning, what information can represent a visual observation or a robot state?",
+        "answer": "An image observation can use RGB pixel values; a robot state can use joint positions and velocities.",
+        "references": [{ "url": "https://spinningup.openai.com/en/latest/spinningup/rl_intro.html#states-and-observations" }]
+      },
+      {
+        "prompt": "In reinforcement learning, what distinguishes full from partial observability?",
+        "answer": "Full observability gives the agent the complete environment state. Partial observability exposes only part of it.",
+        "references": [{ "url": "https://spinningup.openai.com/en/latest/spinningup/rl_intro.html#states-and-observations" }]
+      },
+      {
+        "prompt": "In reinforcement learning notation, why can an action appear conditioned on state $s$ even when the agent only receives observation $o$?",
+        "answer": "Authors often use $s$ by convention while the implemented decision actually depends on $o$. Read the notation in context.",
+        "references": [{ "url": "https://spinningup.openai.com/en/latest/spinningup/rl_intro.html#states-and-observations" }]
+      }
+    ]
+  }]
+}

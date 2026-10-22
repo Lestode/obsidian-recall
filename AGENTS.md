@@ -12,6 +12,11 @@ These instructions apply to the entire repository.
 
 ## Current implementation boundary
 
+When asked to generate Recall questions from a PDF or learning website, use
+[`automation/source-preparation/SKILL.md`](automation/source-preparation/SKILL.md).
+It defines source reading, content checks, destination and copy confirmation,
+and the validated writer; the user should not manage intermediate drafts.
+
 The current phase is the Markdown-to-SQLite read-only inspection slice described
 in [`docs/synchronization-and-storage.md`](docs/synchronization-and-storage.md).
 Do not implement grading, scheduling policy, Markdown edits from the web

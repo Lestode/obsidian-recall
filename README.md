@@ -17,6 +17,8 @@ The current implementation contains:
 - Incremental, debounced reconciliation of changed Markdown files.
 - A read-only local web inspector with rendered Markdown and math, diagnostics,
   archive visibility, source hierarchy, and targeted live updates.
+- Agent-driven PDF/website preparation into a new Recall note with automatic
+  identity and parser validation.
 
 Scheduling, grading, and the interactive review workflow remain intentionally
 unimplemented until their product decisions are resolved.
@@ -50,6 +52,21 @@ npm run start -- --vault "/absolute/path/to/vault"
 ```
 
 Then open `http://127.0.0.1:45871`.
+
+## Prepare questions from a source
+
+With an agent working in this repository, ask it to use
+[`source-preparation`](automation/source-preparation/SKILL.md), giving a PDF or
+web page and a destination folder inside a Recall collection. For example:
+“Prepare States and Observations from Spinning Up in my Reinforcement Learning
+collection.” The agent reads the source, drafts and checks the questions, and
+creates the note; no manual list conversion or UUID editing is needed.
+
+The first implementation is an agent skill with a local writer, not an
+unattended generator or an Obsidian command. A source-history question protects
+against unintended copies. Existing notes and history are never overwritten.
+The Spinning Up pilot draft is available in the skill's `examples/` directory;
+its content still needs user review before expanding to the full source.
 
 For manual plugin testing, copy `manifest.json`, `main.js`, and optionally
 `styles.css` from `apps/obsidian-plugin/` into:

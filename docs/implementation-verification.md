@@ -1,10 +1,10 @@
 # Implementation verification
 
-Verification date: 2026-10-06
+Verification date: 2026-10-22
 
 This checklist records the implementation pass against the authoritative
-Markdown specifications. It covers the implemented authoring and read-only
-inspection phase; the decisions explicitly listed as unresolved in
+Markdown specifications. It covers authoring, agent-driven source preparation,
+and the read-only inspection phase; the decisions explicitly listed as unresolved in
 `review-workflow.md` and `synchronization-and-storage.md` remain out of scope.
 
 ## Authoring and grammar
@@ -30,6 +30,30 @@ inspection phase; the decisions explicitly listed as unresolved in
   Markdown. An orphaned identity blocks reconciliation rather than being
   mistaken for intentional deletion. Editor tests cover the protected identity
   and both adjacent newline boundaries.
+
+## Source preparation
+
+- The agent skill routes PDF or website reading through available source
+  tools, applies the canonical question-writing checks, and uses the local
+  writer rather than asking the user to convert a list or manage UUIDs.
+- The writer creates one note in a new source folder under an existing Recall
+  collection. It requires the user's prior-output declaration or confirmation
+  of another independent copy; automatic source/version matching is not claimed.
+- Fresh identities are generated and completed prompts and answers round-trip
+  through the shared parser. Boundary-changing headings, extra questions,
+  orphan identities, and unclosed fences are rejected before vault writes.
+- The note is published as a complete file without replacement. Tests cover
+  confirmed-copy naming, concurrent creation, occupied symlinks, preserved
+  existing notes, PDF page references, and indexing through the real scanner.
+- A live reading of Spinning Up's States and Observations section produced the
+  five-question pilot draft. The helper created its note in a temporary Recall
+  collection, and all five questions indexed into SQLite without diagnostics.
+  Pilot content acceptance remains with the user; this is not full-course
+  coverage or a test of every PDF extraction tool.
+- The source skill validator, TypeScript check, and full 86-test suite passed.
+  An initial suite run encountered an existing synchronization timeout; that
+  test passed separately and the full rerun passed. No synchronization code
+  was changed.
 
 ## Synchronization and storage
 

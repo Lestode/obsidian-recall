@@ -1,9 +1,9 @@
 # Source preparation and first study
 
-Status: high-level design for source preparation and study tracking. The
-individual study interaction and the need to persist study status are agreed;
-source preparation and storage details below are proposals. Review delivery is
-a later phase. The current read-only implementation remains unchanged.
+Status: first implementation of agent-driven source preparation, with an
+initial pilot awaiting content review. Study tracking remains a high-level
+design; the per-question study interaction is agreed. Review delivery is a
+later phase. The companion service and web inspector remain read-only.
 
 The workflow should let someone provide a PDF or a learning website, receive
 structured Recall notes, study them at their own pace, and store which questions
@@ -29,10 +29,14 @@ stored study status to exclude unstudied questions.
 
 ## Preparing questions from a source
 
-The proposed preparation workflow accepts a PDF or a website and produces notes
-in the existing [Markdown grammar](markdown-grammar.md). A reusable agent skill
-could coordinate source reading, question generation, and validation without
-requiring a separate manual conversion of a pasted list.
+The preparation workflow accepts a PDF or a website and produces notes in the
+existing [Markdown grammar](markdown-grammar.md). The repository-local
+[source preparation skill](../automation/source-preparation/SKILL.md)
+coordinates source reading, question generation, and a validated note writer.
+The user provides the source and destination in conversation; the agent handles
+the intermediate draft and writing without a manual pasted-list conversion.
+This requires an agent with access to the source and local file tools; it is
+not an unattended PDF or website generation service or a new Obsidian button.
 
 The output should follow the source's learning sequence. Filenames supply
 topics, folders supply broader context, and section titles group related
@@ -55,11 +59,20 @@ notes must not be overwritten or modified.
 
 If the source already has generated notes, generation must stop and ask the
 user before creating another copy. It must not silently duplicate the output.
-How prior output is recognized remains to be designed.
+For this first version, ask the user whether the source already has generated
+notes, including older versions, unless that information is already supplied.
+The writer requires either a declaration of no prior output or confirmation
+of a new independent copy. This is a user check, not automatic recognition of
+URLs, renamed PDFs, or updated source versions. An existing destination folder
+also blocks writing without copy confirmation. Confirmed copies use a new
+numbered folder when necessary; existing folders remain unchanged.
 
 Identity must be generated and checked automatically; users should not write
-UUIDs or repeat folder structure as metadata. The exact integration between the
-skill and Recall tooling remains to be designed.
+UUIDs or repeat folder structure as metadata. The writer generates fresh UUIDs
+and validates the completed Markdown with the shared Recall parser before
+publishing a new file. It rejects content that would split or swallow answers,
+or introduce extra questions or orphan identities. Existing root discovery and
+indexing can consume the resulting note without a converter.
 
 Every newly generated question receives a fresh Recall UUID, including copies
 generated from a previously processed source after user confirmation. Generated
@@ -179,13 +192,16 @@ content policy.
 
 ## Suggested delivery sequence
 
-### First milestone proposed for review: source preparation
+### First milestone: source preparation
 
 The first deliverable is one preparation workflow from an agreed PDF or website
 scope to Recall Markdown ready for a collection. It should remove the separate
 step of generating a list and manually converting that list into questions.
-This is a feature proposal; no source reader, generation skill, or export
-integration has been implemented or selected yet.
+The agent skill supplies the source-reading and question-generation procedure;
+the writer supplies automatic identity, structural validation, and creation of
+one note in a source folder. Source access uses the agent's available reading
+tools. Inaccessible or unreliable extraction must be reported, not presented
+as completed coverage. A bounded Spinning Up draft is included for the pilot.
 
 Acceptance of this milestone would require:
 
@@ -195,11 +211,9 @@ Acceptance of this milestone would require:
 2. Generated notes that satisfy the [required content checks](#required-question-content-checks)
    and existing Markdown grammar, including titles, answers, and source
    references, with identity generated and validated automatically.
-3. Explicit human decisions on remaining identity integration and recognition
-   of prior output before implementation commits to them. The one-note,
-   source-folder destination, new-note-only rule, fresh identities, and
-   confirmation before duplicate generation above are agreed; preparing a
-   sample does not authorize overwriting an existing collection.
+3. Writing only beneath a user-selected folder in an existing Recall
+   collection, with the source-history check, confirmation before copies,
+   automatic fresh identities, and no changes to existing notes or history.
 
 Preparation does not confirm that the user has studied the generated material.
 It must remain usable before study tracking or a review platform is available.
@@ -226,9 +240,8 @@ slice into grading, scheduling, or Markdown edits from the web interface.
 - Whether and how users can return studied questions to the unstudied state.
   Effects on active review sessions belong to the later review phase.
 - How content changes affect study status without discarding history.
-- The source preparation skill's scope controls, identity integration, and
-  recognition of prior output for the agreed duplicate-generation guard,
-  including destination-name collisions.
+- Whether future source preparation should recognize prior output
+  automatically instead of relying on the first version's user check.
 - Persistence details, including backup and restoration of study progress
   alongside review history.
 
