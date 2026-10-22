@@ -59,8 +59,12 @@ How prior output is recognized remains to be designed.
 
 Identity must be generated and checked automatically; users should not write
 UUIDs or repeat folder structure as metadata. The exact integration between the
-skill and Recall tooling remains
-to be designed.
+skill and Recall tooling remains to be designed.
+
+Every newly generated question receives a fresh Recall UUID, including copies
+generated from a previously processed source after user confirmation. Generated
+copies do not inherit another question's study status or review history; they
+begin unstudied. Existing questions, identities, and history remain unchanged.
 
 ## Required question content checks
 
@@ -191,11 +195,11 @@ Acceptance of this milestone would require:
 2. Generated notes that satisfy the [required content checks](#required-question-content-checks)
    and existing Markdown grammar, including titles, answers, and source
    references, with identity generated and validated automatically.
-3. Explicit human decisions on identity integration and recognition of prior
-   output before implementation commits to them. The one-note,
-   source-folder destination, new-note-only rule, and confirmation before
-   duplicate generation above are agreed; preparing a sample does not
-   authorize overwriting an existing collection.
+3. Explicit human decisions on remaining identity integration and recognition
+   of prior output before implementation commits to them. The one-note,
+   source-folder destination, new-note-only rule, fresh identities, and
+   confirmation before duplicate generation above are agreed; preparing a
+   sample does not authorize overwriting an existing collection.
 
 Preparation does not confirm that the user has studied the generated material.
 It must remain usable before study tracking or a review platform is available.
