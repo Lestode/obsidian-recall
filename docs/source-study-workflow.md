@@ -48,8 +48,12 @@ rather than filled with invented answers.
 
 For the first milestone, each preparation run produces one Markdown note for
 the agreed source scope, with sections and questions in source order. Splitting
-the output across multiple topic files is deferred. The note is ready to place
-in an existing Recall collection. Identity must be generated and checked
+the output across multiple topic files is deferred. The user selects a parent
+folder within an existing Recall collection. Generation creates a folder for
+the source beneath that parent and places the new note inside it. Existing
+notes must not be overwritten or modified.
+
+Identity must be generated and checked
 automatically; users should not write UUIDs or repeat folder structure as
 metadata. The exact integration between the skill and Recall tooling remains
 to be designed.
@@ -180,9 +184,10 @@ Acceptance of this milestone would require:
 2. Generated notes that satisfy the [required content checks](#required-question-content-checks)
    and existing Markdown grammar, including titles, answers, and source
    references, with identity generated and validated automatically.
-3. Explicit human decisions on destination handling, identity integration, and
-   regeneration before implementation commits to them. These remain open;
-   preparing a sample does not authorize overwriting an existing collection.
+3. Explicit human decisions on identity integration and regeneration before
+   implementation commits to them. The one-note, source-folder destination
+   and new-note-only rules above are agreed; preparing a sample does not
+   authorize overwriting an existing collection.
 
 Preparation does not confirm that the user has studied the generated material.
 It must remain usable before study tracking or a review platform is available.
@@ -209,8 +214,8 @@ slice into grading, scheduling, or Markdown edits from the web interface.
 - Whether and how users can return studied questions to the unstudied state.
   Effects on active review sessions belong to the later review phase.
 - How content changes affect study status without discarding history.
-- The source preparation skill's scope controls, destination handling,
-  identity integration, and handling of regeneration without duplicates.
+- The source preparation skill's scope controls, identity integration, and
+  handling of regeneration without duplicates or destination-name collisions.
 - The desired depth of derivations, code examples, and small details for each
   source, using a representative sample to agree the approach.
 - Persistence details, including backup and restoration of study progress
