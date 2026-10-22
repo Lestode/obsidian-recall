@@ -76,14 +76,16 @@ Recall settings, set **Study companion service** to its loopback address
 (default `http://127.0.0.1:45871`). Each vault needs its own database; use
 `--database /path/outside/the/vault/recall.sqlite` when switching vaults.
 
-Open a Recall note in Live Preview or Reading view. All questions start **Not
-studied**, including existing questions. Click **Mark studied →** or focus that
-button and press Enter: **✓ Studied** is saved and focus advances to the next
-question. **Next →** skips without marking; **Undo study** reverses a mark.
-Editing keeps the studied mark and shows **Content changed**. The service must
-remain running. **Study unavailable** means the connection needs attention; use
-Retry after reconnecting. Progress is local SQLite data, not Markdown. See the
-[backup procedure](docs/source-study-workflow.md#study-state-ownership).
+Open a Recall note in Live Preview or Reading view. Its status icon is an empty
+circle for **Not studied** or a checked circle for **Studied**; click to toggle.
+Or place the editor cursor on a question's `**Q:**` line and press Enter. Marking
+Studied advances the cursor to the next question; marking Not studied stays on
+that question. Enter in answers retains its editing behavior. Editing a studied
+question keeps its mark and shows **Content changed**.
+
+The service must remain running. An unknown-state icon means the connection or
+synchronization needs attention; click to retry. Progress is local SQLite data,
+not Markdown. See the [backup procedure](docs/source-study-workflow.md#study-state-ownership).
 
 For manual plugin testing, copy `manifest.json`, `main.js`, and
 `styles.css` from `apps/obsidian-plugin/` into:

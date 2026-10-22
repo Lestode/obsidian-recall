@@ -46,7 +46,7 @@ export default class ObsidianRecallPlugin extends Plugin {
     this.registerInterval(window.setInterval(() => void study.refreshVisible(), 3000));
     this.registerEditorExtension(studyEditorExtension(study, file => nearestRecallRoot(file, this.markerPaths()) !== null));
     this.registerMarkdownPostProcessor((el, context) => {
-      if (nearestRecallRoot(context.sourcePath, this.markerPaths()) !== null) addReadingStudyControls(el, context, study, this.app);
+      if (nearestRecallRoot(context.sourcePath, this.markerPaths()) !== null) addReadingStudyControls(el, context, study);
     });
     const plugin = this;
     this.addSettingTab(new class extends PluginSettingTab {

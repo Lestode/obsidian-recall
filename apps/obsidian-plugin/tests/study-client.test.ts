@@ -58,3 +58,27 @@ test("service settings accept only loopback HTTP origins", () => {
     assert.throws(() => loopbackServiceUrl(value));
   }
 });
+
+test("the same toggle marks and unmarks with confirmed revisions, while failures return unknown", async () => {
+  let current = state;
+  let fail = false;
+  const changes: boolean[] = [];
+  const client = new StudyClient(async (_route, body) => {
+    if (!body) return { states: [current] };
+    if (fail) throw new Error("Save failed");
+    const request = body as { studied: boolean; expectedRevision: string | null };
+    assert.equal(request.expectedRevision, current.revision);
+    changes.push(request.studied);
+    current = { ...current, studiedAt: request.studied ? "now" : null,
+      studiedContentHash: request.studied ? "hash" : null, revision: String(changes.length) };
+    return { state: current };
+  });
+  assert.equal(await client.toggleStudied("file", state.questionId, "hash"), null);
+  assert.deepEqual(changes, []); // Loading unknown state is not a study action.
+  assert.equal(await client.toggleStudied("file", state.questionId, "hash"), true);
+  assert.equal(await client.toggleStudied("file", state.questionId, "hash"), false);
+  fail = true;
+  assert.equal(await client.toggleStudied("file", state.questionId, "hash"), null);
+  assert.equal(client.snapshot("file").states.get(state.questionId)?.studiedAt, null);
+  assert.deepEqual(changes, [true, false]);
+});

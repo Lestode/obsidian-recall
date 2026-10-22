@@ -60,8 +60,10 @@ Scheduling, grading, and writable review workflows remain later phases.
 
 Obsidian now provides per-question study controls in Live Preview and Reading
 view. Every existing or new question starts Not studied. An explicit Enter/click
-marks only the focused question, persists **✓ Studied**, and advances within the
-note. Edits retain that mark with **Content changed**; Undo study reverses it.
+toggles only that question through a compact status icon. Enter with the text
+cursor on a question marks it studied and advances within the note; Enter on a
+studied question returns it to Not studied. Edits retain the mark with
+**Content changed**.
 The local service stores progress separately from Markdown. See
 [`source-study-workflow.md`](source-study-workflow.md) for the interaction,
 connection requirements, and backup procedure. Consuming this status for recall

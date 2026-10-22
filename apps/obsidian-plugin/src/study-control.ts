@@ -1,27 +1,24 @@
-import { hashQuestionContent } from "@recall/core";
-import type { RecallQuestion } from "@recall/core";
+import { hashQuestionContent, type RecallQuestion } from "@recall/core";
 import { StudyClient } from "./study-client";
 
 export function mountStudyControl(
   container: HTMLElement, client: StudyClient, file: string,
-  question: RecallQuestion & { id: string }, advance: () => void,
+  question: RecallQuestion & { id: string },
   readCurrentQuestion?: () => RecallQuestion | null,
 ): () => void {
   container.className = "recall-study-control";
   container.dataset.recallStudyId = question.id;
   const status = document.createElement("span");
+  status.className = "recall-study-status";
   status.setAttribute("role", "status");
-  const action = document.createElement("button");
-  action.type = "button";
-  const next = document.createElement("button");
-  next.type = "button";
-  next.textContent = "Next →";
-  next.title = "Skip to the next question without changing study progress";
-  next.addEventListener("click", advance);
-  const undo = document.createElement("button");
-  undo.type = "button";
-  undo.textContent = "Undo study";
-  container.append(status, action, next, undo);
+  const icon = document.createElement("button");
+  icon.type = "button";
+  icon.className = "recall-study-icon";
+  const changed = document.createElement("span");
+  changed.className = "recall-study-changed";
+  changed.textContent = "Content changed";
+  changed.hidden = true;
+  container.append(icon, status, changed);
   let disposed = false;
   let hash: string | null = null;
   let indexedHash: string | undefined;
@@ -46,35 +43,31 @@ export function mountStudyControl(
     const busy = client.isBusy(question.id);
     const available = !snapshot.error && hash !== null && state?.contentHash === hash;
     const studied = Boolean(state?.studiedAt);
-    status.textContent = busy ? "Saving…" : snapshot.error ? "Study unavailable" :
-      !snapshot.loaded || hash === null ? "Loading study…" :
-      studied ? `✓ Studied${state?.contentChanged || state?.studiedContentHash !== hash ? " · Content changed" : ""}` :
-      available ? "Not studied" : "Waiting for sync";
-    container.title = snapshot.error ?? (available ? "Study progress is saved separately from this note" : "Wait for synchronization, then retry");
-    action.textContent = available ? "Mark studied →" : "Retry";
-    action.hidden = Boolean(available && studied);
-    action.disabled = busy || hash === null;
-    next.disabled = busy;
-    undo.hidden = !available || !studied;
-    undo.disabled = busy;
+    const contentChanged = studied && hash !== null && Boolean(state?.contentChanged || state?.studiedContentHash !== hash);
+    const label = busy ? "Saving study progress" : snapshot.error ? "Study unavailable" :
+      !snapshot.loaded || hash === null ? "Loading study progress" : !available ? "Waiting for sync" :
+      studied ? "Studied" : "Not studied";
+    status.textContent = label + (contentChanged ? " · Content changed" : "");
+    icon.textContent = busy || hash === null ? "…" : available ? studied ? "✓" : "" : "?";
+    icon.classList.toggle("is-studied", available && studied);
+    icon.classList.toggle("is-unknown", !available);
+    icon.setAttribute("aria-label", label);
+    if (available) icon.setAttribute("aria-pressed", String(studied));
+    else icon.removeAttribute("aria-pressed");
+    icon.title = snapshot.error ? `${snapshot.error} Click to retry.` : !available ?
+      `${label}. Click to retry synchronization.` :
+      `${label}${contentChanged ? " · Content changed" : ""}. Click to mark ${studied ? "not studied" : "studied"}.`;
+    icon.disabled = busy || hash === null;
+    changed.hidden = !contentChanged;
   };
-  action.addEventListener("click", () => {
+  icon.addEventListener("click", () => {
     void (async () => {
       const snapshot = client.snapshot(file);
       if (snapshot.error || snapshot.states.get(question.id)?.contentHash !== hash) {
         await client.load(file);
         return;
       }
-      if (hash && await client.setStudied(file, question.id, hash, true) && !disposed) {
-        advance();
-        // At the last question keep keyboard focus on the available Next control.
-        if (action.hidden && container.contains(document.activeElement)) next.focus();
-      }
-    })();
-  });
-  undo.addEventListener("click", () => {
-    void (async () => {
-      if (hash && await client.setStudied(file, question.id, hash, false) && !disposed) action.focus();
+      if (hash) await client.toggleStudied(file, question.id, hash);
     })();
   });
   const unsubscribe = client.subscribe(file, render);
@@ -82,15 +75,4 @@ export function mountStudyControl(
   void client.load(file);
   render();
   return () => { disposed = true; unsubscribe(); };
-}
-
-export function focusStudyControl(root: ParentNode, id: string): boolean {
-  const control = Array.from(root.querySelectorAll<HTMLElement>(".recall-study-control"))
-    .find(element => element.dataset.recallStudyId === id);
-  if (!control) return false;
-  control.scrollIntoView({ block: "center" });
-  const button = Array.from(control.querySelectorAll<HTMLButtonElement>("button"))
-    .find(element => !element.hidden && !element.disabled);
-  button?.focus();
-  return Boolean(button);
 }

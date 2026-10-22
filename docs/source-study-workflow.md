@@ -150,34 +150,35 @@ remain unresolved in the
 
 ## Agreed study interaction
 
-The study interaction focuses one question at a time while retaining its topic
-and section context. It must be available independently of the future review
-platform. It lives in Obsidian beside each question, in Live Preview and
-Reading view, with the existing note supplying answers and source links. After
-covering that question's material, the user presses **Enter** or clicks the corresponding study control. The interaction:
+Each identified question has one clickable status icon in Obsidian Live Preview
+and Reading view: an empty circle means **Not studied**; a checked circle means
+**Studied**. Clicking it toggles only that question in place. There are no
+separate Mark studied, Next, or Undo buttons. Tooltips and accessible labels name
+the current status and the action. An edited studied question also displays
+**Content changed**, retaining its stored studied mark.
 
-1. Marks only the focused question as studied and persists that status.
-2. Shows a persistent **✓ Studied** marker beside that question.
-3. Moves focus to the next question.
+In the editor, pressing plain **Enter** with a single empty selection anywhere
+on the question's `**Q:**` line toggles that question. Marking it studied advances
+the text cursor to the next question in this note, preserving the one-keypress
+study pass; returning it to Not studied leaves the cursor on the question.
+The final question retains the cursor. Clicking an icon, or activating that
+focused icon with Enter/Space, toggles in place so it can be clicked again.
 
-This makes a study pass possible with one deliberate keypress per question.
-There is no requirement to select a range or mark an entire section. Marking
-one question never silently activates earlier questions.
-
-The marker remains visible on return so the user can distinguish covered and
-upcoming material. Enter applies to the study control; ordinary note editing
-keeps its own keyboard behavior. A **Next** control skips without marking;
-already studied questions retain their mark and offer Next and **Undo study**.
-Undo explicitly returns only that question to Not studied. Native keyboard
-focus and scrolling allow revisiting earlier questions. Advancing follows the
-current note order, never crosses files or wraps at the end, and never marks
-intervening questions. The final control retains focus.
+Ordinary Enter in answers and other note text, modified Enter, selections,
+multiple cursors, and IME composition keep their editing behavior. Missing or
+duplicated identities are never toggled. Holding Enter cannot mark a series of
+questions through key repeat. Navigation uses normal cursor movement and
+scrolling; it never changes intervening questions or crosses files. If the user
+moves the cursor or edits the document during a save, completion must not move
+it back or steal focus.
 
 The local companion service must be running for this vault. Plugin settings
-provide its loopback address. An unavailable service shows **Study unavailable**
-with retry; it must never imply that an unknown state is Not studied. Saving
-must succeed before the marker or focus advances. A content/version conflict
-asks the user to retry after synchronization; it never marks a different version.
+provide its loopback address. An unavailable or unsynchronized state uses an
+unknown-state icon and a descriptive tooltip, never an empty Not studied circle.
+Clicking retries synchronization. Saving must succeed before the icon changes
+or the cursor advances. A content/version conflict requires synchronization and
+retry; it never marks a different version. Reviewed/recall outcomes remain a
+separate future concept; these icons toggle the existing study state only.
 
 ## Example with Spinning Up
 
@@ -188,7 +189,7 @@ An example question is: “In reinforcement learning, how does an agent's
 observation differ from the environment state?”
 
 The user reads the relevant explanation, returns to the focused question, and
-presses Enter. Its **✓ Studied** marker appears and focus advances. If the user
+presses Enter. Its icon becomes checked and the text cursor advances. If the user
 stops before covering value functions, the stored status distinguishes those
 unstudied questions from the covered ones. A future review platform can use
 that information to exclude them. Even within one section, each question needs
@@ -208,8 +209,8 @@ Moving or renaming a question should retain its study progress through that
 identity. Newly generated questions with new identities begin unstudied even
 when inserted into a previously studied section. Edits retain the studied mark
 and display **Content changed** when the current prompt/answer hash differs from the version marked studied. This is informational;
-no scheduling or eligibility policy is introduced. Undo followed by a new study
-action records the current version. Reverting exactly to the studied version
+no scheduling or eligibility policy is introduced. Toggling to Not studied and
+then Studied records the current version. Reverting exactly to the studied version
 clears the notice. Changes to source location or headings do not trigger it.
 
 The service is the sole SQLite writer. The database is bound to its vault path;

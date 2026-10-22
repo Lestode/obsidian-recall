@@ -20,18 +20,42 @@
 .recall-study-control {
   display: inline-flex;
   align-items: center;
-  gap: 0.4em;
-  margin-inline-start: 0.6em;
-  flex-wrap: wrap;
-  font-size: var(--font-smallest);
+  gap: 0.35em;
+  margin-inline-start: 0.5em;
+  vertical-align: middle;
   color: var(--text-muted);
   user-select: none;
 }
-.recall-study-control button {
-  font-size: inherit;
-  padding: 0.1em 0.5em;
-  height: auto;
-  line-height: 1.6;
+.recall-study-control .recall-study-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4em;
+  height: 1.4em;
+  padding: 0;
+  border: 1.5px solid var(--text-faint);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+  line-height: 1;
+  cursor: pointer;
 }
-.recall-study-control button[hidden] { display: none; }
-.recall-study-control button:focus-visible { outline: 2px solid var(--interactive-accent); }
+.recall-study-control .recall-study-icon.is-studied {
+  border-color: var(--text-success);
+  color: var(--text-success);
+}
+.recall-study-control .recall-study-icon:hover { background: var(--background-modifier-hover); }
+.recall-study-control .recall-study-icon:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+.recall-study-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.recall-study-changed { font-size: var(--font-smallest); }
+.recall-study-changed[hidden] { display: none; }

@@ -115,9 +115,14 @@ pilot, not human content acceptance or coverage of the full introduction.
 
 - Existing and generated questions all start Not studied, even with review
   history. Only an explicit per-question action writes study state.
-- Live Preview and Reading view display status and Mark studied, Next, and Undo
-  study controls. Enter on a focused button saves and advances within the note;
-  Next skips, the final question retains focus, and ordinary editing is separate.
+- Live Preview and Reading view display one clickable status icon per question:
+  an empty circle for Not studied, a checked circle for Studied. Clicking toggles
+  in place. Plain Enter with the text cursor on the question line toggles study
+  state; marking Studied advances the text cursor within the note, while
+  marking Not studied stays on the question. No Mark/Next/Undo buttons remain.
+- Cursor targeting tests cover any position on a question line, answer and
+  surrounding lines, selected text, multiple cursors, read-only editors,
+  missing/duplicate identity, fenced examples, modifiers, and IME composition.
 - The sole SQLite writer is the loopback service. Its study API verifies the
   vault path, question UUID, file, current disk/index content, and previous study
   revision. Browser form requests, other vaults, stale versions, invalid or
@@ -128,13 +133,14 @@ pilot, not human content acceptance or coverage of the full introduction.
   Review events and session snapshots are unaffected.
 - Controls share confirmed state, avoid optimistic success, and show Study
   unavailable when disconnected. A delayed read cannot erase a confirmed mark.
-- Actual Obsidian v1.10.3 in an isolated profile/vault verified Enter navigation,
-  skipping without marking earlier questions, last-question focus, explicit
-  undo in Reading view, unchanged Markdown after study writes, changed-content
-  notices, and persistence after reloading the app. A 40-question synthetic note
-  with long answers verified scrolling and focus into unrendered sections in
-  Reading view and Live Preview. The identity-line CSS now overrides Obsidian's
-  line display rule, keeping machine comments hidden in the editor.
+- Actual Obsidian v1.14.4 in an isolated profile/vault verified icon toggles,
+  native button Enter, both directions of the question-line Enter shortcut,
+  text-cursor advance only when marking Studied (including an off-screen
+  question in a long note), no Markdown changes from study actions, ignored repeated Enter, normal answer newline insertion, changed
+  notices, Reading view toggles, and persistence after reloading the app.
+  Prior verification in v1.10.3 covered the underlying study service and long
+  notes. The identity-line CSS overrides Obsidian's line display rule, keeping
+  machine comments hidden in the editor.
 - An offline/restart check in Obsidian verified Study unavailable, retry without
   marking or advancing, and recovery of the previously confirmed state.
 - The installed private-vault build and connected service were checked without
@@ -143,7 +149,7 @@ pilot, not human content acceptance or coverage of the full introduction.
   retained their pre-installation hashes. Previous plugin artifacts/settings
   were backed up before installation. Activating the updated plugin requires
   reloading it in the already open private vault.
-- The full 101-test suite, TypeScript check, and production build pass. A
+- The full 105-test suite, TypeScript check, and production build pass. A
   watcher deletion test timed out during concurrent build/UI checks and passed
   when the complete suite was rerun alone; no watcher behavior was changed. These
   checks do not claim grading, scheduling, multi-device progress, or automatic

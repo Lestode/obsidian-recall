@@ -85,6 +85,16 @@ export class StudyClient {
       this.notify(file);
     }
   }
+
+  async toggleStudied(file: string, id: string, contentHash: string): Promise<boolean | null> {
+    const previous = this.snapshot(file).states.get(id);
+    if (!previous || this.snapshot(file).error || previous.contentHash !== contentHash) {
+      await this.load(file);
+      return null;
+    }
+    const studied = !previous.studiedAt;
+    return await this.setStudied(file, id, contentHash, studied) ? studied : null;
+  }
 }
 
 export function loopbackServiceUrl(value: string): string {

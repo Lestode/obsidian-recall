@@ -108,13 +108,14 @@ root, so a nested collection takes precedence over a broader collection.
 
 ## First study in Obsidian
 
-Live Preview and Reading view provide a study control beside each identified
-Recall question. Click **Mark studied →**, or focus the button and press Enter,
-to persist **✓ Studied** and focus the next question in this note. **Next →**
-skips without marking; **Undo study** explicitly returns a question to Not
-studied. Existing and generated questions all begin unstudied. Editing retains
-the mark and displays **Content changed** when the prompt or answer changes.
-Ordinary editor Enter does not mark a question.
+Live Preview and Reading view provide a clickable status icon beside each
+identified Recall question: empty circle for Not studied, checked for Studied.
+Clicking toggles in place. With the editor cursor on the `**Q:**` line, plain
+Enter toggles the status; marking Studied advances the cursor to the next
+question, while marking Not studied stays on the question. All existing and
+generated questions begin unstudied. Editing retains a studied mark and displays
+**Content changed** when the prompt or answer changes. Enter in answers and
+other note text retains its editing behavior.
 
 The local companion service must be running for this vault; its address is set
 in the plugin's **Study companion service** setting. No progress syntax is
