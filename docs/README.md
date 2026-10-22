@@ -60,7 +60,7 @@ Scheduling, grading, and writable review workflows remain later phases.
 
 Obsidian now provides per-question study controls in Live Preview and Reading
 view. Every existing or new question starts Not studied. An explicit Enter/click
-toggles only that question through a compact status icon. Enter with the text
+toggles only that question through a small coloured Reviewed / Not reviewed label. Enter with the text
 cursor on a question marks it studied and advances within the note; Enter on a
 studied question returns it to Not studied. Edits retain the mark with
 **Content changed**.

@@ -15,7 +15,8 @@ At a high level:
 
 The source preparation and study-tracking milestone must persist whether each
 question has been studied, before an interactive review platform exists. A
-clickable status icon toggles only the chosen question. Plain Enter with the
+small coloured Reviewed / Not reviewed label toggles only the chosen question's
+existing study state. Plain Enter with the
 editor cursor on its question line also toggles study status and, when marking
 Studied, advances the cursor to the next question.
 Initial study is distinct from a recall attempt and does not establish mastery

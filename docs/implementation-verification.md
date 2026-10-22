@@ -115,9 +115,10 @@ pilot, not human content acceptance or coverage of the full introduction.
 
 - Existing and generated questions all start Not studied, even with review
   history. Only an explicit per-question action writes study state.
-- Live Preview and Reading view display one clickable status icon per question:
-  an empty circle for Not studied, a checked circle for Studied. Clicking toggles
-  in place. Plain Enter with the text cursor on the question line toggles study
+- Live Preview and Reading view display one small clickable text label per
+  question: amber Not reviewed or green Reviewed, mapping to the existing
+  Not studied / Studied data. Text and accessible names communicate the status
+  alongside colour. Clicking toggles in place. Plain Enter with the text cursor on the question line toggles study
   state; marking Studied advances the text cursor within the note, while
   marking Not studied stays on the question. No Mark/Next/Undo buttons remain.
 - Cursor targeting tests cover any position on a question line, answer and
@@ -133,14 +134,15 @@ pilot, not human content acceptance or coverage of the full introduction.
   Review events and session snapshots are unaffected.
 - Controls share confirmed state, avoid optimistic success, and show Study
   unavailable when disconnected. A delayed read cannot erase a confirmed mark.
-- Actual Obsidian v1.14.4 in an isolated profile/vault verified icon toggles,
+- Actual Obsidian v1.14.4 in an isolated profile/vault verified coloured text-label toggles,
   native button Enter, both directions of the question-line Enter shortcut,
   text-cursor advance only when marking Studied (including an off-screen
   question in a long note), no Markdown changes from study actions, ignored repeated Enter, normal answer newline insertion, changed
   notices, Reading view toggles, and persistence after reloading the app.
   Prior verification in v1.10.3 covered the underlying study service and long
   notes. The identity-line CSS overrides Obsidian's line display rule, keeping
-  machine comments hidden in the editor.
+  machine comments hidden in the editor. The label check verified visible text
+  and different computed colours for Reviewed and Not reviewed.
 - An offline/restart check in Obsidian verified Study unavailable, retry without
   marking or advancing, and recovery of the previously confirmed state.
 - The installed private-vault build and connected service were checked without

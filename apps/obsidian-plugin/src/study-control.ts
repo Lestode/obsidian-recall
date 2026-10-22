@@ -11,14 +11,14 @@ export function mountStudyControl(
   const status = document.createElement("span");
   status.className = "recall-study-status";
   status.setAttribute("role", "status");
-  const icon = document.createElement("button");
-  icon.type = "button";
-  icon.className = "recall-study-icon";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "recall-study-toggle";
   const changed = document.createElement("span");
   changed.className = "recall-study-changed";
   changed.textContent = "Content changed";
   changed.hidden = true;
-  container.append(icon, status, changed);
+  container.append(button, status, changed);
   let disposed = false;
   let hash: string | null = null;
   let indexedHash: string | undefined;
@@ -44,23 +44,23 @@ export function mountStudyControl(
     const available = !snapshot.error && hash !== null && state?.contentHash === hash;
     const studied = Boolean(state?.studiedAt);
     const contentChanged = studied && hash !== null && Boolean(state?.contentChanged || state?.studiedContentHash !== hash);
-    const label = busy ? "Saving study progress" : snapshot.error ? "Study unavailable" :
-      !snapshot.loaded || hash === null ? "Loading study progress" : !available ? "Waiting for sync" :
-      studied ? "Studied" : "Not studied";
+    const label = busy ? "Saving…" : snapshot.error ? "Unavailable" :
+      !snapshot.loaded || hash === null ? "Loading…" : !available ? "Syncing…" :
+      studied ? "Reviewed" : "Not reviewed";
     status.textContent = label + (contentChanged ? " · Content changed" : "");
-    icon.textContent = busy || hash === null ? "…" : available ? studied ? "✓" : "" : "?";
-    icon.classList.toggle("is-studied", available && studied);
-    icon.classList.toggle("is-unknown", !available);
-    icon.setAttribute("aria-label", label);
-    if (available) icon.setAttribute("aria-pressed", String(studied));
-    else icon.removeAttribute("aria-pressed");
-    icon.title = snapshot.error ? `${snapshot.error} Click to retry.` : !available ?
+    button.textContent = label;
+    button.classList.toggle("is-studied", available && studied);
+    button.classList.toggle("is-unknown", !available);
+    button.setAttribute("aria-label", label);
+    if (available) button.setAttribute("aria-pressed", String(studied));
+    else button.removeAttribute("aria-pressed");
+    button.title = snapshot.error ? `${snapshot.error} Click to retry.` : !available ?
       `${label}. Click to retry synchronization.` :
-      `${label}${contentChanged ? " · Content changed" : ""}. Click to mark ${studied ? "not studied" : "studied"}.`;
-    icon.disabled = busy || hash === null;
+      `${label}${contentChanged ? " · Content changed" : ""}. Click to mark ${studied ? "not reviewed" : "reviewed"}.`;
+    button.disabled = busy || hash === null;
     changed.hidden = !contentChanged;
   };
-  icon.addEventListener("click", () => {
+  button.addEventListener("click", () => {
     void (async () => {
       const snapshot = client.snapshot(file);
       if (snapshot.error || snapshot.states.get(question.id)?.contentHash !== hash) {

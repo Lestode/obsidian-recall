@@ -108,8 +108,10 @@ root, so a nested collection takes precedence over a broader collection.
 
 ## First study in Obsidian
 
-Live Preview and Reading view provide a clickable status icon beside each
-identified Recall question: empty circle for Not studied, checked for Studied.
+Live Preview and Reading view provide a small clickable status label beside each
+identified Recall question: amber **Not reviewed** for Not studied, green
+**Reviewed** for Studied. These labels name the existing study state, not a
+graded recall result.
 Clicking toggles in place. With the editor cursor on the `**Q:**` line, plain
 Enter toggles the status; marking Studied advances the cursor to the next
 question, while marking Not studied stays on the question. All existing and

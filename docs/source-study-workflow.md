@@ -150,19 +150,22 @@ remain unresolved in the
 
 ## Agreed study interaction
 
-Each identified question has one clickable status icon in Obsidian Live Preview
-and Reading view: an empty circle means **Not studied**; a checked circle means
-**Studied**. Clicking it toggles only that question in place. There are no
-separate Mark studied, Next, or Undo buttons. Tooltips and accessible labels name
-the current status and the action. An edited studied question also displays
-**Content changed**, retaining its stored studied mark.
+Each identified question has one small clickable text label in Obsidian Live
+Preview and Reading view: **Not reviewed** in amber or **Reviewed** in green.
+These are the user-facing names for the existing Not studied / Studied states;
+they record covering the material, not a graded recall attempt. Changing the
+wording does not migrate, reset, or infer progress. Text carries the status as
+well as colour. There is no circular icon or separate Mark, Next, or Undo button.
+Clicking the label toggles only that question in place. Tooltips and accessible
+labels name the status and action. An edited studied question also displays
+**Content changed**, retaining its stored mark.
 
 In the editor, pressing plain **Enter** with a single empty selection anywhere
 on the question's `**Q:**` line toggles that question. Marking it studied advances
 the text cursor to the next question in this note, preserving the one-keypress
 study pass; returning it to Not studied leaves the cursor on the question.
-The final question retains the cursor. Clicking an icon, or activating that
-focused icon with Enter/Space, toggles in place so it can be clicked again.
+The final question retains the cursor. Clicking a label, or activating that
+focused label with Enter/Space, toggles in place so it can be clicked again.
 
 Ordinary Enter in answers and other note text, modified Enter, selections,
 multiple cursors, and IME composition keep their editing behavior. Missing or
@@ -174,11 +177,12 @@ it back or steal focus.
 
 The local companion service must be running for this vault. Plugin settings
 provide its loopback address. An unavailable or unsynchronized state uses an
-unknown-state icon and a descriptive tooltip, never an empty Not studied circle.
-Clicking retries synchronization. Saving must succeed before the icon changes
+neutral **Unavailable**, **Loading…**, or **Syncing…** label and a descriptive
+tooltip, never a Not reviewed label for unknown state. Clicking retries
+synchronization. Saving must succeed before the label changes
 or the cursor advances. A content/version conflict requires synchronization and
 retry; it never marks a different version. Reviewed/recall outcomes remain a
-separate future concept; these icons toggle the existing study state only.
+separate future concept; these labels toggle the existing study state only.
 
 ## Example with Spinning Up
 
@@ -189,7 +193,7 @@ An example question is: “In reinforcement learning, how does an agent's
 observation differ from the environment state?”
 
 The user reads the relevant explanation, returns to the focused question, and
-presses Enter. Its icon becomes checked and the text cursor advances. If the user
+presses Enter. Its label becomes Reviewed and the text cursor advances. If the user
 stops before covering value functions, the stored status distinguishes those
 unstudied questions from the covered ones. A future review platform can use
 that information to exclude them. Even within one section, each question needs
