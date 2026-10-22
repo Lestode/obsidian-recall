@@ -53,9 +53,13 @@ folder within an existing Recall collection. Generation creates a folder for
 the source beneath that parent and places the new note inside it. Existing
 notes must not be overwritten or modified.
 
-Identity must be generated and checked
-automatically; users should not write UUIDs or repeat folder structure as
-metadata. The exact integration between the skill and Recall tooling remains
+If the source already has generated notes, generation must stop and ask the
+user before creating another copy. It must not silently duplicate the output.
+How prior output is recognized remains to be designed.
+
+Identity must be generated and checked automatically; users should not write
+UUIDs or repeat folder structure as metadata. The exact integration between the
+skill and Recall tooling remains
 to be designed.
 
 ## Required question content checks
@@ -184,9 +188,10 @@ Acceptance of this milestone would require:
 2. Generated notes that satisfy the [required content checks](#required-question-content-checks)
    and existing Markdown grammar, including titles, answers, and source
    references, with identity generated and validated automatically.
-3. Explicit human decisions on identity integration and regeneration before
-   implementation commits to them. The one-note, source-folder destination
-   and new-note-only rules above are agreed; preparing a sample does not
+3. Explicit human decisions on identity integration and recognition of prior
+   output before implementation commits to them. The one-note,
+   source-folder destination, new-note-only rule, and confirmation before
+   duplicate generation above are agreed; preparing a sample does not
    authorize overwriting an existing collection.
 
 Preparation does not confirm that the user has studied the generated material.
@@ -215,7 +220,8 @@ slice into grading, scheduling, or Markdown edits from the web interface.
   Effects on active review sessions belong to the later review phase.
 - How content changes affect study status without discarding history.
 - The source preparation skill's scope controls, identity integration, and
-  handling of regeneration without duplicates or destination-name collisions.
+  recognition of prior output for the agreed duplicate-generation guard,
+  including destination-name collisions.
 - The desired depth of derivations, code examples, and small details for each
   source, using a representative sample to agree the approach.
 - Persistence details, including backup and restoration of study progress
