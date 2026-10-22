@@ -86,10 +86,12 @@ Before accepting a generated set:
 4. Remove redundant prompts and retain the source's learning progression,
    useful section titles, and references to the relevant explanations.
 
-Validate a small representative section before generating the full source.
-The desired coverage of derivations, code examples, and small details remains
-to be agreed for that source. A successful Markdown parse establishes syntax
-validity; it does not establish question quality or source coverage.
+Use the deep-coverage default in the question-writing guidance; the user can
+review and prune the result. For the initial Spinning Up pilot, validate a
+small representative section before generating the full agreed scope. Routine
+use does not require each user to approve a sample. A successful Markdown parse
+establishes syntax validity; it does not establish question quality or source
+coverage.
 
 ## Study information to store
 
@@ -183,8 +185,9 @@ integration has been implemented or selected yet.
 
 Acceptance of this milestone would require:
 
-1. A small representative sample whose coverage and depth the user validates
-   before generation extends to the full agreed scope.
+1. An initial Spinning Up pilot sample whose coverage and depth the user
+   validates before generation extends to the full agreed scope. This validates
+   the workflow during development; it is not a mandatory step for every user.
 2. Generated notes that satisfy the [required content checks](#required-question-content-checks)
    and existing Markdown grammar, including titles, answers, and source
    references, with identity generated and validated automatically.
@@ -222,8 +225,6 @@ slice into grading, scheduling, or Markdown edits from the web interface.
 - The source preparation skill's scope controls, identity integration, and
   recognition of prior output for the agreed duplicate-generation guard,
   including destination-name collisions.
-- The desired depth of derivations, code examples, and small details for each
-  source, using a representative sample to agree the approach.
 - Persistence details, including backup and restoration of study progress
   alongside review history.
 

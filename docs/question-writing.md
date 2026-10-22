@@ -124,10 +124,13 @@ Before accepting a generated set, check that:
    web section links or PDF page references. A reference must not substitute
    for essential context in the prompt.
 
-For mathematical material, distinguish explaining an equation from deriving
-it. The desired depth of derivations, code examples, and small details should
-be agreed for the source rather than silently assumed.
+Within the selected source scope, default to deep coverage, including
+derivations, code examples, and substantive details present in the source.
+Users can review and delete unwanted questions afterward. This does not
+justify redundant prompts or material unsupported by the source. For
+mathematical material, distinguish explaining an equation from deriving it.
 
-Try a small representative section before generating an entire course. Check
-both individual prompt quality and coverage of the section; confirm the desired
-depth before extending the same approach to the remaining material.
+During initial workflow development, validate a small representative section
+for prompt quality, source coverage, and depth before scaling up. This pilot
+does not impose a sample-approval step on every user or every generation run.
+The content checks above still apply to all output.
