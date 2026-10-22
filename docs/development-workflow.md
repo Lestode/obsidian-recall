@@ -1,7 +1,7 @@
 # Development from high level intent
 
-Status: agreed working strategy. Automated review and GitHub integration are
-not yet configured.
+Status: agreed working strategy. The local documentation reviewer is active
+through GitHub; see its [integration notes](../automation/documentation-review/README.md).
 
 ## Purpose
 

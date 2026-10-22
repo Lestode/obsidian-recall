@@ -10,12 +10,14 @@ const MAX_CONTEXT_BYTES = 240_000;
 const MAX_FILES = 100;
 class IncompleteReview extends Error {}
 
-function formatResponse({ marker, response, revision }) {
+function formatResponse({ marker, response, revision, open = true }) {
   return `${marker}\n## 🤖 ${identity.name}\n\n` +
     `**Automated agent · ${identity.engine} · ${identity.execution} execution**\n\n` +
     `**Model:** ${identity.model} · **Reasoning effort:** ${identity.reasoningEffort}\n\n` +
     `**Purpose:** ${identity.purpose}\n\n---\n\n${response}\n\n` +
-    `_[Proposal revision](${revision}). Later pushes require a new request._`;
+    `_[Proposal revision](${revision}).${open ? ' Later pushes require a new request.' : ''}_\n\n` +
+    `To ${open ? 'reply' : 'continue'}, post \`/review-docs <your reply>\` in ${open ? 'this open' : 'an open'} PR's **Conversation** tab. ` +
+    'Agreed changes must be applied separately.';
 }
 
 function parseCommand(body) {
@@ -178,29 +180,34 @@ async function run({ github, context, core, review = runCodex }) {
   let response;
   try {
     ({ data: pull } = await github.rest.pulls.get({ ...repo, pull_number: number }));
-    if (pull.state !== 'open') return;
+    if (pull.state !== 'open' && automatic) return;
     const requestId = automatic ? `pr-${number}-${pull.head.sha}` : payload.comment.id;
     marker = `<!-- recall-documentation-review:${requestId} -->`;
     const comments = await github.paginate(github.rest.issues.listComments, {
       ...repo, issue_number: number, per_page: 100,
     });
     if (comments.some(comment => comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker))) return;
-    const inline = await github.paginate(github.rest.pulls.listReviewComments, {
-      ...repo, pull_number: number, per_page: 100,
-    });
-    const reviews = await github.paginate(github.rest.pulls.listReviews, {
-      ...repo, pull_number: number, per_page: 100,
-    });
-    const discussion = [...comments, ...inline, ...reviews].sort((a, b) =>
-      (a.created_at || a.submitted_at || '').localeCompare(b.created_at || b.submitted_at || ''));
-    const prompt = await collectContext({ github, repo, pull, question, comments: discussion });
-    response = await review(prompt);
+    if (pull.state !== 'open') {
+      response = `This PR is ${pull.merged_at ? 'merged' : 'closed'}, so no review ran. ` +
+        'To apply a new correction, open a follow-up PR.';
+    } else {
+      const inline = await github.paginate(github.rest.pulls.listReviewComments, {
+        ...repo, pull_number: number, per_page: 100,
+      });
+      const reviews = await github.paginate(github.rest.pulls.listReviews, {
+        ...repo, pull_number: number, per_page: 100,
+      });
+      const discussion = [...comments, ...inline, ...reviews].sort((a, b) =>
+        (a.created_at || a.submitted_at || '').localeCompare(b.created_at || b.submitted_at || ''));
+      const prompt = await collectContext({ github, repo, pull, question, comments: discussion });
+      response = await review(prompt);
+    }
   } catch (error) {
     failed = true;
     response = `Review incomplete. ${error instanceof IncompleteReview ? error.message : 'Source retrieval or local execution failed; check the Actions job.'}`;
   }
   const revision = `https://github.com/${repo.owner}/${repo.repo}/pull/${number}${pull ? `/files/${pull.head.sha}` : ''}`;
-  const body = formatResponse({ marker, response, revision });
+  const body = formatResponse({ marker, response, revision, open: !pull || pull.state === 'open' });
   let summarySaved = false;
   try {
     await core.summary.addRaw(body).write();

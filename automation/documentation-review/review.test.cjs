@@ -91,15 +91,16 @@ test('a follow-up reviews both immutable revisions and prior PR discussion, then
   assert.match(f.calls.responses[0].body, /\*\*Purpose:\*\*/);
   assert.match(f.calls.responses[0].body, /recall-documentation-review:42/);
   assert.match(f.calls.responses[0].body, /files\/proposed/);
+  assert.match(f.calls.responses[0].body, /`\/review-docs <your reply>`.*Conversation/);
+  assert.match(f.calls.responses[0].body, /Agreed changes must be applied separately\.$/);
   assert.deepEqual(f.calls.failures, []);
 });
 
-for (const scenario of ['public', 'bot', 'closed', 'read-only collaborator', 'edited comment']) {
+for (const scenario of ['public', 'bot', 'read-only collaborator', 'edited comment']) {
   test(`${scenario} cannot start the local reviewer`, async () => {
     const f = fixture();
     if (scenario === 'public') f.context.payload.repository.private = false;
     if (scenario === 'bot') f.context.payload.comment.user.type = 'Bot';
-    if (scenario === 'closed') f.pull.state = 'closed';
     if (scenario === 'edited comment') f.context.payload.action = 'edited';
     if (scenario === 'read-only collaborator') {
       f.github.rest.repos.getCollaboratorPermissionLevel = async () => ({ data: { permission: 'read' } });
@@ -113,6 +114,48 @@ for (const scenario of ['public', 'bot', 'closed', 'read-only collaborator', 'ed
 test('rerunning the same request preserves its existing response', async () => {
   const f = fixture();
   f.comments.push({ body: '<!-- recall-documentation-review:42 -->\nExisting response', user: { login: 'github-actions[bot]' } });
+  await run(f);
+  assert.equal(f.calls.reviews.length, 0);
+  assert.equal(f.calls.responses.length, 0);
+});
+
+for (const state of ['closed', 'merged']) {
+  test(`a command on a ${state} PR posts guidance without collecting source or running Codex`, async () => {
+    const f = fixture();
+    f.pull.state = 'closed';
+    if (state === 'merged') f.pull.merged_at = '2026-10-22T09:42:06Z';
+    const reads = [];
+    f.github.paginate = async method => {
+      reads.push(method);
+      assert.equal(method, 'comments');
+      return f.comments;
+    };
+    await run(f);
+    assert.deepEqual(reads, ['comments']);
+    assert.equal(f.calls.reviews.length, 0);
+    assert.equal(f.calls.responses.length, 1);
+    const body = f.calls.responses[0].body;
+    assert.ok(body.includes(`This PR is ${state}`));
+    assert.match(body, /no review ran/);
+    assert.match(body, /follow-up PR/);
+    assert.match(body, /`\/review-docs <your reply>` in an open PR's \*\*Conversation\*\*/);
+    assert.doesNotMatch(body, /Later pushes/);
+    assert.equal(f.calls.summaries[0], body);
+    assert.deepEqual(f.calls.failures, []);
+
+    f.comments.push({ body, user: { login: 'github-actions[bot]' } });
+    await run(f);
+    assert.equal(f.calls.responses.length, 1);
+    assert.equal(f.calls.reviews.length, 0);
+  });
+}
+
+test('an automatic event for a closed PR remains silent', async () => {
+  const f = fixture();
+  f.pull.state = 'closed';
+  f.context.eventName = 'pull_request_target';
+  f.context.payload.action = 'opened';
+  f.context.payload.pull_request = { number: 7, user: { login: 'author', type: 'User' } };
   await run(f);
   assert.equal(f.calls.reviews.length, 0);
   assert.equal(f.calls.responses.length, 0);
@@ -158,6 +201,8 @@ test('a missing Markdown diff produces a visible incomplete result, never a clea
   assert.equal(f.calls.reviews.length, 0);
   assert.match(f.calls.responses[0].body, /Review incomplete/);
   assert.match(f.calls.responses[0].body, /Automated agent · Codex · local execution/);
+  assert.match(f.calls.responses[0].body, /`\/review-docs <your reply>`.*Conversation/);
+  assert.match(f.calls.responses[0].body, /Agreed changes must be applied separately\.$/);
   assert.equal(f.calls.failures.length, 1);
 });
 

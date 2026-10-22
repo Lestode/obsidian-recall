@@ -1,10 +1,8 @@
 # Local documentation review through GitHub
 
-Status: the Mac runner receives automatic PR jobs. The first automatic attempt
-failed while publishing its response with HTTP 403. The original handler hid
-that status. This update uses explicit PR-write permission, preserves the
-report, and exposes safe failure details. Successful automatic comment
-publication remains unverified until this update is merged and exercised.
+Status: automatic PR reviews and comment follow-ups have successfully published
+through GitHub's Actions bot account. See the [automatic review on PR #4](https://github.com/Lestode/obsidian-recall/pull/4#issuecomment-6337271832)
+and the [follow-up on PR #2](https://github.com/Lestode/obsidian-recall/pull/2#issuecomment-6337493469).
 
 GitHub holds the PR and its discussion. A self-hosted GitHub Actions runner on
 the user's Mac runs Codex with ChatGPT subscription authentication, then returns
@@ -20,8 +18,7 @@ agent-generated.
 
 The approved reviewer configuration is GPT-6.1 Sol with **high** reasoning
 effort, pinned in the identity metadata and passed explicitly to Codex. Reports
-show these settings alongside the agent's purpose. The pin takes effect after
-this reviewer update is merged into the default branch.
+show these settings alongside the agent's purpose.
 
 ```mermaid
 flowchart LR
@@ -39,17 +36,28 @@ The [loop policy convention](../README.md) applies. This loop's policy is:
 |---|---|
 | New PR | Review automatically when opened by a human collaborator with write access |
 | Reopened or ready for review | Review if this revision has not already received an automatic response |
-| Comment beginning `/review-docs` | Review or answer the supplied follow-up question |
+| Comment beginning `/review-docs` on an open PR | Review or answer the supplied follow-up question |
+| Command on a closed or merged PR | Post a short explanation and direct further discussion to an open PR; do not run Codex |
 | Push or commit | No automatic run; request another review when useful |
 | Public repository, bot, or user without write access | Do not run |
 | Input and runtime | At most 100 changed files, 100 Markdown documents per revision, 240 KB of context, and ten minutes for Codex |
 | Limit exceeded or execution failure | Report an incomplete result; use the Actions job as fallback if authorization or posting is unavailable |
 
-Comment `/review-docs` on an open PR to request another review or continue the
-discussion, such as `/review-docs explain the second finding`. Each request
+Post a new comment beginning `/review-docs` in an open PR's **Conversation** tab
+to request another review or continue the discussion, such as
+`/review-docs explain the second finding`. Each request
 reads the current proposal and prior discussion and produces one response.
 Publishing changed files requires a commit and push; discussion does not.
-Discussion does not require a new commit.
+Discussion does not require a new commit. Replies in inline review threads and
+edits to existing comments do not trigger the reviewer.
+
+Every published response ends with a short reminder of the command, where to
+post it, and that agreed changes must be applied separately. The publishing
+code adds this reminder, including for incomplete reviews. A command on a
+closed or merged PR receives a notice instead of a review, with instructions
+to continue on an open PR. Rerunning the same request does not duplicate the
+notice. Follow-up changes after a merge need a new PR; agreement in discussion
+does not update the merged files.
 
 The first loop reviews and proposes corrections. It does not edit files or
 merge. Only repository collaborators with write access may invoke it. Keep the
