@@ -1,6 +1,6 @@
 ---
 name: documentation-review
-description: Review proposed documentation for consistency, redundancy, ergonomics, and consequential decisions requiring human input. Use for a documentation review or a follow-up discussion of its findings.
+description: Review proposed documentation changes for contradictions, missing requirements, ambiguity, and redundant authoritative definitions. Use for a documentation review or a follow-up discussion of its findings.
 ---
 
 # Documentation review
@@ -33,50 +33,14 @@ new wording already supersedes the accepted rule.
   summaries, reminders, and necessary local context; repetition alone is not a
   defect. Do not remove qualifications while proposing consolidation.
 
-## Investigate before asking the human
-
-The agent identifies and investigates tradeoffs; the human should not have to
-discover them. First look for an approach that satisfies the relevant goals
-together. When one is supported, recommend it rather than inventing a choice
-between goals. When a conflict remains, explain the options, consequences,
-recommendation, and what could not be established. Failure to find a way to
-satisfy both goals does not prove that doing so is impossible. Leave unresolved
-priorities to the human.
-
-Check common AI failure points against the stated intent and concrete user
-workflow:
-
-- **Lost intent:** a lower-level choice undermines the requested outcome.
-- **Ergonomics:** unnecessary steps or repeated confirmations, unclear user
-  control or state, or difficult recovery from mistakes.
-- **Unnecessary complexity:** added mechanisms, configuration, or user work
-  without a demonstrated need.
-- **False confidence:** assumptions, incomplete checks, or proposed behavior
-  presented as verified results.
-
-These are review lenses, not a quota of findings or new universal product
-requirements. Support each concern with relevant passages and a concrete
-consequence or example. Distinguish a defect from a preference or an important
-missing design decision. A consequential assumption about user effort or
-control may need human input even without a documented contradiction.
-
-Begin with the highest unresolved question about intent or the user experience.
-Investigate mechanics first when needed to understand the options, but bring
-technical details to the human only when they affect the decision. Do not turn
-routine details into individual approval questions or reopen recorded choices.
-
 ## Report and discuss
 
-Lead with a short **Needs your decision** list. Include only unresolved
-priorities or consequential design choices requiring human judgment. State
-each choice as a concise question with its consequence and recommendation.
-If none remain, say so within the checked scope; this is not human acceptance.
-
-Then group **Recommended fixes** that follow agreed rules or propose routine
-defaults, without asking for each separately. Recommendations are not accepted
-decisions or authorization to apply changes. Keep supporting passages and
-coverage limits below the summary. Omit empty sections and cosmetic criticism
-that does not affect interpretation or maintenance.
+Return one concise summary, with consequential conflicts before maintenance
+suggestions. For each actionable finding, identify the relevant rule and
+passages, explain the effect, and propose a concrete resolution. Include
+alternatives when the user's priorities determine the answer. Group related
+findings and omit cosmetic criticism that does not affect interpretation or
+maintenance.
 
 State the scope checked. Report missing context and incomplete checks separately
 from “no actionable conflicts found.” Do not invent findings to fill a report.
