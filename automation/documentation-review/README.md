@@ -50,9 +50,9 @@ response marker recognizes earlier replies when requests are rerun.
 ## Execution and setup
 
 The repository is private. The existing `obsidian-recall-mac` runner uses the
-`obsidian-recall` label and local Codex ChatGPT sign-in. This extraction does
-not move model execution to a hosted runner or change authentication to an API
-key. The action's source is downloaded from GitHub and runs on that same Mac.
+`obsidian-recall` label and local Codex ChatGPT sign-in. The agent
+process runs locally; model inference uses OpenAI. The action's source is
+downloaded from GitHub and runs on that same Mac using subscription authentication.
 
 Allow the private `review-agents` repository to share its action with private
 repositories owned by `Lestode`. No additional repository credential is stored
