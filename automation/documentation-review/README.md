@@ -10,7 +10,12 @@ The shared action is active from the default branch. The prior bundled reviewer
 successfully published
 [automatic reviews](https://github.com/Lestode/obsidian-recall/pull/4#issuecomment-6337271832)
 and [follow-ups](https://github.com/Lestode/obsidian-recall/pull/2#issuecomment-6337493469).
-The deployment-status PR exercises publication through the extracted action.
+Publication through the extracted action is verified by the
+[Recall review on PR #10](https://github.com/Lestode/obsidian-recall/pull/10#issuecomment-6361955701)
+and its [successful Actions run](https://github.com/Lestode/obsidian-recall/actions/runs/39933024527).
+The shared repository also verified
+[self-review on PR #1](https://github.com/Lestode/review-agents/pull/1#issuecomment-6361896634)
+through its separate local runner.
 
 ## Project customization
 
