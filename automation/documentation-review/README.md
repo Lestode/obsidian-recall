@@ -6,11 +6,16 @@ checkout at `../review-agents` beside this project. The GitHub workflow pins an
 immutable shared revision. The implementation, model identity, general working
 agreement, and review procedure are maintained there rather than copied here.
 
-This migration takes effect after its workflow and configuration are accepted
-on the default branch. The prior bundled reviewer successfully published
+The shared action is active from the default branch. The prior bundled reviewer
+successfully published
 [automatic reviews](https://github.com/Lestode/obsidian-recall/pull/4#issuecomment-6337271832)
 and [follow-ups](https://github.com/Lestode/obsidian-recall/pull/2#issuecomment-6337493469).
-Publication through the extracted action must be verified after activation.
+Publication through the extracted action is verified by the
+[Recall review on PR #10](https://github.com/Lestode/obsidian-recall/pull/10#issuecomment-6361955701)
+and its [successful Actions run](https://github.com/Lestode/obsidian-recall/actions/runs/39933024527).
+The shared repository also verified
+[self-review on PR #1](https://github.com/Lestode/review-agents/pull/1#issuecomment-6361896634)
+through its separate local runner.
 
 ## Project customization
 
@@ -54,8 +59,8 @@ The repository is private. The existing `obsidian-recall-mac` runner uses the
 process runs locally; model inference uses OpenAI. The action's source is
 downloaded from GitHub and runs on that same Mac using subscription authentication.
 
-Allow the private `review-agents` repository to share its action with private
-repositories owned by `Lestode`. No additional repository credential is stored
+The private `review-agents` repository shares its action with private
+repositories owned by `Lestode`, through GitHub's owner-wide access setting. No additional repository credential is stored
 here. The job token keeps content-read and PR-write access and is not passed to
 Codex. No proposed PR code is executed. Runtime bounds, context collection,
 tool restrictions, credential isolation, summary fallback, and failure reporting
@@ -64,11 +69,10 @@ are defined in the pinned
 The accepted collector's 512,000-byte complete-prompt budget and compressed
 snapshot/diff input are preserved.
 
-The runner must be online. Merge this migration through normal acceptance,
-then open or reopen a PR and verify a review plus a successful Actions job.
-Continue with `/review-docs`. Until activation, existing PRs use the bundled
-default-branch reviewer. Failed publication retains the report in the Actions
-job summary when available.
+The runner must be online. Open a PR to receive an automatic review, then
+continue with `/review-docs`. Existing PRs need a new explicit request or a
+reopening event for a revision without an automatic response. Failed publication
+retains the report in the Actions job summary when available.
 
 For upgrades, test shared changes in `review-agents`, update the action SHA and
 the pinned links in this directory and `docs/development-workflow.md` together,

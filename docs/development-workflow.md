@@ -1,7 +1,7 @@
 # Development from high level intent
 
-Status: agreed working strategy. The local documentation reviewer is active;
-the shared-action migration takes effect when its workflow is accepted on main.
+Status: agreed working strategy. The shared documentation reviewer is active
+through GitHub on the existing local Mac runner.
 
 Obsidian Recall adopts the shared
 [development strategy](https://github.com/Lestode/review-agents/blob/ceed975afad92e71e8ab40b33de5cb6c79a27464/WORKFLOW.md)
