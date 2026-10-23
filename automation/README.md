@@ -1,8 +1,9 @@
 # Project loops
 
-Keep loop instructions, execution policy, and integration code here. The
-[development strategy](../docs/development-workflow.md) defines the shared
-purpose and division of responsibility.
+Keep project-specific loop policy and adapters here. The reusable documentation
+reviewer and general working agreement live in the private `review-agents`
+repository. The [development strategy](../docs/development-workflow.md) records
+Recall's adoption, pinned version, and division of responsibility.
 
 Each loop must declare:
 
