@@ -1,57 +1,34 @@
 # Development from high level intent
 
-Status: agreed working strategy. The local documentation reviewer is active
-through GitHub; see its [integration notes](../automation/documentation-review/README.md).
+Status: agreed working strategy. The local documentation reviewer is active;
+the shared-action migration takes effect when its workflow is accepted on main.
 
-## Purpose
+Obsidian Recall adopts the shared
+[development strategy](https://github.com/Lestode/review-agents/blob/ceed975afad92e71e8ab40b33de5cb6c79a27464/WORKFLOW.md)
+and [review procedure](https://github.com/Lestode/review-agents/blob/ceed975afad92e71e8ab40b33de5cb6c79a27464/documentation-review/SKILL.md)
+from the version pinned in `.github/workflows/documentation-review.yml`.
+Those documents define the general intent → proposal → consistency review →
+human decision loop and the division of responsibility. Maintain shared methods
+in `review-agents`; adopt updates explicitly through a pinned revision change.
 
-Spend human attention on intent and consequential decisions. Agents translate
-high-level goals into concrete proposals and check that lower-level choices
-preserve those goals and the project's existing constraints.
+This repository's [documentation index](README.md), `AGENTS.md`, and relevant
+product documents remain authoritative for Recall behavior and implementation
+boundaries. Record agreed behavior in the appropriate product document before
+or alongside implementation. Do not silently settle unresolved product choices.
 
-## The loop
+The reviewer is customized through
+[project Markdown instructions](../automation/documentation-review/project.md),
+selected by `.github/documentation-review.json`. Reference governing documents
+there instead of maintaining another copy of their rules. The GitHub action
+loads accepted instructions from an immutable default-branch checkout; proposed
+instruction changes are reviewed using the currently accepted version.
 
-```mermaid
-flowchart TD
-    A[Your intent] --> B[Proposed documentation change]
-    B --> C[Check consistency with existing rules]
-    C --> D[Concise findings and proposed fixes]
-    D --> E[Your decision]
-    E -->|Revise| B
-    E -->|Accept| F[Apply the approved change]
-```
+Use a feature branch and pull request for a coherent change, and merge after
+human acceptance. Once the user authorizes a scope, complete it without repeated
+confirmation. Approval of documentation alone does not authorize implementation,
+pushing, or merging. The reviewer reports and discusses findings; it does not
+edit files or merge PRs.
 
-## Agent responsibility
-
-Read the relevant specification, inspect the proposed change for contradictions,
-missing requirements, and ambiguity, and explain consequential findings with
-supporting passages and proposed resolutions. Report missing context or
-incomplete checks rather than presenting them as a clean result. Recheck
-revisions against the original intent.
-
-## Human responsibility
-
-Define goals and priorities, resolve conflicting intentions, and approve
-changes. Agents must not silently weaken a high-level rule to accommodate an
-implementation. Once a scope is approved, agents can complete it without
-repeated confirmation.
-
-## Communication
-
-Present the decision first. Group related findings and keep detailed evidence
-available separately. Avoid repeated notifications for unchanged issues.
-Distinguish proposals, agreed decisions, and implemented behavior.
-
-## Putting it into practice
-
-Use a feature branch and pull request for a coherent proposed change; push
-revisions to that branch and merge after acceptance. Begin with one consistency
-and redundancy reviewer using the
-[documentation review skill](../automation/documentation-review/SKILL.md).
-Improve it using examples of useful findings, missed conflicts, and false alarms.
-The [local GitHub integration](../automation/documentation-review/README.md)
-describes the PR interface, subscription-backed execution, and setup status.
-
-Implementation follows the agreed specification within the scope authorized by
-the user. Approval of documentation does not by itself authorize implementation,
-pushing, or merging. Existing product implementation boundaries still apply.
+See the [integration notes](../automation/documentation-review/README.md) for
+invocation, runner settings, and activation. Execution stays on the existing
+self-hosted Mac runner using local ChatGPT sign-in.

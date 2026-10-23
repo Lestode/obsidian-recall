@@ -1,0 +1,6 @@
+{
+  "documentationIndex": "docs/README.md",
+  "instructionsPath": "automation/documentation-review/project.md",
+  "command": "/review-docs",
+  "markerPrefix": "recall-documentation-review"
+}
