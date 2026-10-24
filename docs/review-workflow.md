@@ -14,9 +14,11 @@ At a high level:
 ## First study before recall
 
 The source preparation and study-tracking milestone must persist whether each
-question has been studied, before an interactive review platform exists. Enter
-or the matching click action marks only the focused question studied, stores
-that status, displays **✓ Studied**, and advances focus to the next question.
+question has been studied, before an interactive review platform exists. A
+small coloured Reviewed / Not reviewed label toggles only the chosen question's
+existing study state. Plain Enter with the
+editor cursor on its question line also toggles study status and, when marking
+Studied, advances the cursor to the next question.
 Initial study is distinct from a recall attempt and does not establish mastery
 or determine scheduling.
 
@@ -25,8 +27,8 @@ questions. Delivering recall sessions is separate from recording study progress.
 
 The high-level design, proposed source preparation workflow, and remaining
 study decisions are in
-[`source-study-workflow.md`](source-study-workflow.md). Study tracking is not
-implemented in the current read-only inspection phase.
+[`source-study-workflow.md`](source-study-workflow.md). Study tracking is implemented in Obsidian independently of the read-only web
+inspector. It does not change review-session selection or grading.
 
 ## Explicitly unresolved
 

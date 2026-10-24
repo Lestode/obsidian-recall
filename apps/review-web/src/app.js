@@ -1,6 +1,7 @@
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import markedKatex from "marked-katex-extension";
+import { inspectorSourceLink } from "./source-links.js";
 
 marked.use(markedKatex({ throwOnError: false, output: "mathml", nonStandard: true }));
 
@@ -33,8 +34,12 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function renderMarkdown(source) {
-  const rendered = marked.parse(source || "");
+function renderMarkdown(source, questionId) {
+  const rendered = marked.parse(source || "", {
+    walkTokens(token) {
+      if (token.type === "link") token.href = inspectorSourceLink(token.href, questionId);
+    },
+  });
   return DOMPurify.sanitize(rendered, { USE_PROFILES: { html: true, mathMl: true } });
 }
 
@@ -90,7 +95,7 @@ function renderQuestions() {
         <div class="question-meta"><span class="status ${question.status}">${question.status}</span><span>#${question.questionOrdinal + 1}</span></div>
         ${section}
         <div class="markdown question-prompt">${renderMarkdown(question.prompt)}</div>
-        <details><summary>Show answer</summary><div class="answer markdown">${question.answer ? renderMarkdown(question.answer) : "<em>No answer yet.</em>"}</div></details>
+        <details><summary>Show answer</summary><div class="answer"><strong class="answer-label">A:</strong><div class="answer-content markdown">${question.answer ? renderMarkdown(question.answer, question.id) : "<em>No answer yet.</em>"}</div></div></details>
       </article>`;
   }).join("");
 }

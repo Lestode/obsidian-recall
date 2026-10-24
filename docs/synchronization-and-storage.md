@@ -1,7 +1,6 @@
 # Synchronization, storage, and source ordering
 
-Status: implementation baseline for the Markdown-to-SQLite read-only inspection
-phase. Scheduling and grading decisions remain out of scope.
+Status: Markdown-to-SQLite inspection plus explicit Obsidian study-state writes. Scheduling and grading decisions remain out of scope.
 
 ## Purpose
 
@@ -57,6 +56,7 @@ Markdown remains authoritative for:
 
 SQLite remains authoritative for:
 
+- per-question study progress, separate from authored content and grading;
 - append-only review events;
 - current scheduling state;
 - the content version used during a review;
@@ -192,6 +192,7 @@ At minimum, the planned database separates:
 | `questions` | Rebuildable current Markdown index and archive status |
 | `question_versions` | Immutable prompt-and-answer versions by content hash |
 | `review_events` | Append-only outcomes referencing the reviewed version |
+| `study_state` | Explicit studied timestamp and content hash by stable UUID |
 | `review_state` | Cached current scheduling state for each UUID |
 | `review_sessions` | Stable queue metadata and lifecycle |
 | `review_session_items` | Ordered question IDs and content hashes for a session |
@@ -278,7 +279,9 @@ This inspector validates the complete Markdown-to-SQLite-to-interface path
 before review outcomes or scheduling policy are implemented.
 
 The inspector uses a native collapsed disclosure for answers so prompts remain
-scannable while answers are still inspectable. This is inspector presentation,
+scannable while answers are still inspectable. Expanded answers display a
+visible **A:** label beside the first line of answer content, with no extra
+blank line after the label. This is inspector presentation,
 not the progressive-reveal behavior of the future review screen, which remains
 unresolved.
 
@@ -288,6 +291,13 @@ reserved for startup, explicit full rescans, collection/filter changes, and
 recovery events. Prompts and answers are rendered as sanitized Markdown with
 math support. Validation diagnostics remain visible against the last successful
 database revision.
+
+Local PDF links in answers use a read-only source route scoped to the indexed
+question. The service verifies that the requested file is an actual PDF linked
+from that answer, and the inspector preserves its physical-page fragment.
+Other filesystem paths are not exposed. This implements the source-reference
+behavior in [source preparation](source-study-workflow.md) without changing
+the Markdown or copying source files.
 
 ## Failure and recovery behaviour
 
@@ -328,3 +338,11 @@ This document intentionally does not decide:
 
 Those decisions belong to the review workflow and scheduler design and must be
 agreed before their implementation.
+
+## Obsidian study extension
+
+The first-study extension permits narrow SQLite study-state writes from the
+Obsidian plugin through the loopback service. It does not permit Markdown edits,
+grading, or scheduling through the web inspector. The interaction, initialization,
+edit behavior, and offline backup procedure are recorded in
+[source study](source-study-workflow.md#agreed-study-interaction).

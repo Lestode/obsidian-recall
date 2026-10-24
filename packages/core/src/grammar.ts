@@ -1,7 +1,9 @@
 export const RECALL_MARKER_FILE = "_recall.md";
 export const QUESTION_PREFIX = "**Q:**";
+export const ANSWER_PREFIX = "**A:**";
 
 const QUESTION_RE = /^\*\*Q:\*\*(?:[ \t]+(.*?))?[ \t]*$/;
+const ANSWER_RE = /^\*\*A:\*\*(?:[ \t]+(.*?))?[ \t]*$/;
 const ID_RE = /^\s*<!--\s*recall:id=([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\s*-->\s*$/i;
 const HEADING_BOUNDARY_RE = /^ {0,3}#{1,2}(?:\s+|$)/;
 const ANY_HEADING_RE = /^ {0,3}#{1,6}(?:\s+|$)/;
@@ -152,10 +154,20 @@ export function parseRecallQuestions(markdown: string): RecallQuestion[] {
     }
     while (cursor < endLine && lines[cursor]?.trim() === "") cursor += 1;
 
+    const answerLines = lines.slice(cursor, endLine);
+    const answerMatch = answerLines[0]?.match(ANSWER_RE);
+    if (answerMatch) {
+      answerLines[0] = answerMatch[1] ?? "";
+      while (answerLines.length && answerLines[0]?.trim() === "") {
+        answerLines.shift();
+        cursor += 1;
+      }
+    }
+
     return {
       id,
       prompt: (questionMatch[1] ?? "").trim(),
-      answer: lines.slice(cursor, endLine).join("\n").trimEnd(),
+      answer: answerLines.join("\n").trimEnd(),
       questionLine,
       identityLine,
       answerStartLine: cursor,
@@ -179,6 +191,16 @@ export function identityComment(id: string): string {
   return `<!-- recall:id=${id} -->`;
 }
 
+/** Keep prose beside A:, while preserving the syntax of block-first answers. */
+export function formatRecallAnswer(answer: string): string {
+  const [first = "", second = ""] = answer.split("\n", 2);
+  const block = FENCE_RE.test(first) || ANY_HEADING_RE.test(first) || LIST_ITEM_RE.test(first)
+    || /^(?: {4}|\t)/.test(first)
+    || /^ {0,3}(?:>|<|\$\$|\\\[|\[[^\]]+\]:|(?:[-*_][ \t]*){3,}$)/.test(first)
+    || (first.includes("|") && /^\s*\|?\s*:?-+/.test(second));
+  return `${ANSWER_PREFIX}${block ? "\n\n" : " "}${answer}`;
+}
+
 export function questionTemplate(id: string): string {
-  return `${QUESTION_PREFIX} \n${identityComment(id)}\n\n`;
+  return `${QUESTION_PREFIX} \n${identityComment(id)}\n\n${formatRecallAnswer("")}\n\n`;
 }

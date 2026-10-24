@@ -37,6 +37,17 @@ export interface DatabaseStatus {
   lastReconciledAt: string | null;
 }
 
+export interface StudyState {
+  questionId: string;
+  contentHash: string;
+  studiedAt: string | null;
+  studiedContentHash: string | null;
+  revision: string | null;
+  contentChanged: boolean;
+}
+
+export class StudyConflict extends Error {}
+
 export interface ReviewSessionItem {
   sessionPosition: number;
   questionId: string;
@@ -155,6 +166,14 @@ export class RecallDatabase {
       CREATE INDEX IF NOT EXISTS idx_review_state_due
         ON review_state(due_at);
 
+      CREATE TABLE IF NOT EXISTS study_state (
+        question_id TEXT PRIMARY KEY,
+        studied_at TEXT,
+        studied_content_hash TEXT,
+        revision TEXT NOT NULL,
+        FOREIGN KEY(question_id) REFERENCES questions(id)
+      );
+
       CREATE TABLE IF NOT EXISTS review_sessions (
         id TEXT PRIMARY KEY,
         created_at TEXT NOT NULL,
@@ -176,6 +195,56 @@ export class RecallDatabase {
 
       INSERT OR IGNORE INTO metadata(key, value) VALUES ('revision', '0');
     `);
+  }
+
+  bindVault(vaultPath: string): void {
+    this.transaction(() => {
+      const row = this.connection.prepare("SELECT value FROM metadata WHERE key = 'vault_path'").get();
+      if (row && row.value !== vaultPath) {
+        throw new Error("This database belongs to another vault. Use a separate --database path.");
+      }
+      this.connection.prepare("INSERT OR IGNORE INTO metadata(key, value) VALUES ('vault_path', ?)").run(vaultPath);
+    });
+  }
+
+  getStudyState(id: string): StudyState | null {
+    const row = this.connection.prepare(`
+      SELECT q.id, q.content_hash, s.studied_at, s.studied_content_hash, s.revision
+      FROM questions q LEFT JOIN study_state s ON s.question_id = q.id WHERE q.id = ?
+    `).get(id);
+    if (!row) return null;
+    const studiedAt = nullableText(row, "studied_at");
+    const studiedContentHash = nullableText(row, "studied_content_hash");
+    return {
+      questionId: text(row, "id"), contentHash: text(row, "content_hash"),
+      studiedAt, studiedContentHash, revision: nullableText(row, "revision"),
+      contentChanged: studiedAt !== null && studiedContentHash !== row.content_hash,
+    };
+  }
+
+  setStudied(options: {
+    questionId: string; filePath: string; contentHash: string;
+    studied: boolean; expectedRevision: string | null;
+  }, at = new Date().toISOString()): StudyState {
+    return this.transaction(() => {
+      const question = this.getQuestion(options.questionId);
+      const previous = this.getStudyState(options.questionId);
+      if (!question || question.archivedAt || question.filePath !== options.filePath ||
+          question.contentHash !== options.contentHash || !previous ||
+          previous.revision !== options.expectedRevision) {
+        throw new StudyConflict("Question or progress changed. Wait for synchronization and retry.");
+      }
+      // A repeated study action does not silently acknowledge edited content.
+      if (options.studied && previous.studiedAt) return previous;
+      this.connection.prepare(`
+        INSERT INTO study_state(question_id, studied_at, studied_content_hash, revision)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(question_id) DO UPDATE SET studied_at = excluded.studied_at,
+          studied_content_hash = excluded.studied_content_hash, revision = excluded.revision
+      `).run(options.questionId, options.studied ? at : null,
+        options.studied ? options.contentHash : null, randomUUID());
+      return this.getStudyState(options.questionId)!;
+    });
   }
 
   reconcileFull(

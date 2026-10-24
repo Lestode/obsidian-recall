@@ -1,6 +1,6 @@
 # Obsidian Recall documentation
 
-Status: authoring layer plus the first Markdown-to-SQLite inspection slice
+Status: authoring, source preparation, read-only inspection, and Obsidian first study
 
 This directory is the authoritative source for Obsidian Recall's product behavior. Code must conform to these documents. When behavior changes, update the relevant document before or alongside the implementation.
 
@@ -42,7 +42,8 @@ The Obsidian authoring layer currently supports:
 7. Import numbered question lists with optional `A:` answers.
 
 An additional agent-driven source preparation workflow reads PDFs or websites
-and creates a new, parser-validated Recall note with automatic identity. See
+and creates new, parser-validated Recall notes with automatic identity, using
+one note per chapter for books. See
 [`source-study-workflow.md`](source-study-workflow.md) and the
 [source preparation skill](../automation/source-preparation/SKILL.md).
 
@@ -58,11 +59,18 @@ The current companion-service phase adds:
 
 Scheduling, grading, and writable review workflows remain later phases.
 
-The source preparation implementation and future first-study design are described in
-[`source-study-workflow.md`](source-study-workflow.md). It records the agreed
-per-question study action and the information to store before a review platform
-exists, separately from proposals and open decisions. Study tracking is not
-implemented; consuming study status for recall comes later.
+Obsidian now provides per-question study controls in Live Preview and Reading
+view. Every existing or new question starts Not studied. An explicit Enter/click
+toggles only that question through a small coloured Reviewed / Not reviewed label. Enter with the text
+cursor on a question marks it studied and advances within the note; Enter on a
+studied question returns it to Not studied. Edits retain the mark with
+**Content changed**.
+File-list and open-title labels derive note completion from those question
+marks; see the [completion rules](source-study-workflow.md#chapter-and-note-completion).
+The local service stores progress separately from Markdown. See
+[`source-study-workflow.md`](source-study-workflow.md) for the interaction,
+connection requirements, and backup procedure. Consuming this status for recall
+sessions comes later.
 
 ## Change process
 

@@ -7,8 +7,8 @@ The planned system has three layers:
 3. **Local web interface** — presents review sessions and records outcomes.
 
 The first layer and the read-only indexing path through the second and third
-layers are implemented. Review scheduling and graded review events are not yet
-implemented.
+layers, plus per-question study controls and SQLite persistence, are
+implemented. Review scheduling and graded review events are not yet implemented.
 
 ## Markdown owns authored knowledge
 
@@ -24,6 +24,7 @@ Obsidian Markdown is authoritative for:
 
 SQLite will be authoritative for:
 
+- per-question study progress and the version marked studied;
 - review events and attempt history;
 - current review state;
 - suggested or selected next review;

@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, TFile, normalizePath } from "obsidian";
+import { Editor, FileSystemAdapter, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, TFile, normalizePath, requestUrl } from "obsidian";
 import {
   duplicateQuestionIds,
   orphanRecallIdentities,
@@ -10,6 +10,10 @@ import { nearestRecallRoot } from "./roots";
 import { RecallSlashSuggest, SlashAction } from "./slash-suggest";
 import { recallIdentityEditorExtension } from "./editor-marker";
 import { convertNumberedQuestions } from "./import-questions";
+import { StudyClient, loopbackServiceUrl } from "./study-client";
+import { studyEditorExtension } from "./study-editor";
+import { addReadingStudyControls } from "./study-reading";
+import { registerNoteProgressViews } from "./note-progress-views";
 import {
   importPrefixForContext,
   questionPrefixForBlankLine,
@@ -17,6 +21,52 @@ import {
 
 export default class ObsidianRecallPlugin extends Plugin {
   async onload(): Promise<void> {
+    const data = await this.loadData() as { serviceUrl?: string } | null;
+    let serviceUrl = data?.serviceUrl ?? "http://127.0.0.1:45871";
+    const study = new StudyClient(async (route, body) => {
+      const adapter = this.app.vault.adapter;
+      if (!(adapter instanceof FileSystemAdapter)) throw new Error("Study tracking requires the desktop companion service.");
+      let timer: number | undefined;
+      try {
+        const response = await Promise.race([
+          requestUrl({
+            url: `${loopbackServiceUrl(serviceUrl)}${route}`,
+            method: body ? "POST" : "GET", throw: false,
+            headers: { "x-recall-client": "obsidian", "x-recall-vault": encodeURIComponent(adapter.getBasePath()) },
+            ...(body ? { contentType: "application/json", body: JSON.stringify(body) } : {}),
+          }),
+          new Promise<never>((_resolve, reject) => {
+            timer = window.setTimeout(() => reject(new Error(
+              "Could not confirm study progress. Check the companion service and retry.")), 10000);
+          }),
+        ]);
+        if (response.status !== 200) throw new Error(response.json?.error ?? "Study service unavailable. Start the companion service for this vault.");
+        return response.json;
+      } finally { if (timer !== undefined) window.clearTimeout(timer); }
+    });
+    this.registerInterval(window.setInterval(() => void study.refreshVisible(), 3000));
+    registerNoteProgressViews(this, study, file => file.extension === "md" && file.name !== RECALL_MARKER_FILE && this.isInsideRecallRoot(file));
+    this.registerEditorExtension(studyEditorExtension(study, file => nearestRecallRoot(file, this.markerPaths()) !== null));
+    this.registerMarkdownPostProcessor((el, context) => {
+      if (nearestRecallRoot(context.sourcePath, this.markerPaths()) !== null) addReadingStudyControls(el, context, study);
+    });
+    const plugin = this;
+    this.addSettingTab(new class extends PluginSettingTab {
+      display(): void {
+        this.containerEl.empty();
+        new Setting(this.containerEl).setName("Study companion service")
+          .setDesc("Start the local service for this vault, then use its loopback address. Progress is stored separately from Markdown.")
+          .addText(text => text.setValue(serviceUrl).onChange(async value => {
+            serviceUrl = value;
+            try {
+              const checked = loopbackServiceUrl(value);
+              await plugin.saveData({ ...data, serviceUrl: checked });
+              serviceUrl = checked;
+              await study.refreshVisible();
+            } catch { /* Retry displays validation errors for an incomplete address. */ }
+          }));
+      }
+    }(this.app, this));
     this.registerEditorExtension(recallIdentityEditorExtension);
     this.app.workspace.updateOptions();
 
