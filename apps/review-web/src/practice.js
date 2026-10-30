@@ -65,7 +65,7 @@ export function initPractice({ renderMarkdown, escapeHtml: esc }) {
     const due = projects
       .filter((p) => p.folderPath === p.collectionPath)
       .reduce((n, p) => n + p.due + p.ready, 0);
-    root.innerHTML = `<div class="practice-heading"><div><p class="eyebrow">A LITTLE PRACTICE, LASTING KNOWLEDGE</p><h2>Make it yours.</h2><p class="muted">${due ? `${due} questions ready for recall.` : "Choose a topic and pick up where you left off."}</p></div>
+    root.innerHTML = `<div class="practice-heading"><div><h2>Practice</h2><p class="muted">${due ? `${due} questions ready for recall.` : "Choose a project or folder to review."}</p></div>
       <label class="unseen-toggle"><input id="include-unseen" type="checkbox" ${includeUnseen ? "checked" : ""}> Include unseen material</label></div>
       ${sessions.length ? `<section class="resume-list"><h3>Pick up where you left off</h3>${sessions.map((s) => `<button data-resume="${esc(s.id)}">Resume ${esc(s.scope.folderPath || s.scope.collectionPath || "all questions")} <span>→</span></button>`).join("")}</section>` : ""}
       <div class="project-grid">${
