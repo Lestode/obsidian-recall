@@ -483,6 +483,7 @@ export class RecallDatabase {
     orderedQuestionIds: string[],
     createdAt = new Date().toISOString(),
     id: string = randomUUID(),
+    initialize?: (sessionId: string) => void,
   ): ReviewSession {
     return this.transaction(() => {
       const revision = this.revision();
@@ -508,6 +509,7 @@ export class RecallDatabase {
       items.forEach((item, position) => {
         insertItem.run(id, position, item.questionId, item.contentHash);
       });
+      initialize?.(id);
       const session = this.getSession(id);
       if (!session) throw new Error(`Could not read newly created review session ${id}.`);
       return session;
@@ -577,15 +579,27 @@ export class RecallDatabase {
     return revision;
   }
 
-  private transaction<T>(operation: () => T): T {
-    this.connection.exec("BEGIN IMMEDIATE");
+  private transactionDepth = 0;
+
+  transaction<T>(operation: () => T): T {
+    const savepoint = `recall_${this.transactionDepth}`;
+    const nested = this.transactionDepth > 0;
+    this.connection.exec(nested ? `SAVEPOINT ${savepoint}` : "BEGIN IMMEDIATE");
+    this.transactionDepth++;
     try {
       const result = operation();
-      this.connection.exec("COMMIT");
+      this.connection.exec(nested ? `RELEASE ${savepoint}` : "COMMIT");
       return result;
     } catch (error) {
-      this.connection.exec("ROLLBACK");
+      this.connection.exec(nested ? `ROLLBACK TO ${savepoint}` : "ROLLBACK");
+      if (nested) this.connection.exec(`RELEASE ${savepoint}`);
       throw error;
+    } finally {
+      this.transactionDepth--;
     }
   }
 }
+
+export { ReviewStore, ReviewError } from "./review";
+
+export { PlanStore, PlanError } from "./planning";

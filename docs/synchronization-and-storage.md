@@ -1,6 +1,6 @@
 # Synchronization, storage, and source ordering
 
-Status: Markdown-to-SQLite inspection plus explicit Obsidian study-state writes. Scheduling and grading decisions remain out of scope.
+Status: Markdown-to-SQLite inspection, shared study state, and the initial local FSRS review milestone.
 
 ## Purpose
 
@@ -37,8 +37,8 @@ The responsibilities are separated as follows:
 - `core` contains the Markdown grammar, parser, shared types, and content
   hashing so the plugin and service interpret questions identically.
 - `database` contains the schema, migrations, and reconciliation operations.
-- `scheduler` will contain selection and scheduling policy after that policy is
-  agreed.
+- `scheduler` contains the FSRS wrapper; the database review store implements
+  the agreed queue-selection policy.
 
 The installed Obsidian plugin directory contains build artifacts only. It is
 not an authoritative source directory.
@@ -69,7 +69,7 @@ review history.
 
 The live database must not be placed inside a cloud-synchronized Obsidian
 vault. It belongs in the operating system's application-data directory and
-will later need explicit backup and export behaviour.
+uses the backup and export procedure in [review workflow](review-workflow.md).
 
 ## Indexed question position
 
@@ -198,8 +198,8 @@ At minimum, the planned database separates:
 | `review_session_items` | Ordered question IDs and content hashes for a session |
 
 These stores and their initial columns are implemented in the database package.
-Review events retain before-and-after scheduling fields, although the policy
-that will populate them remains unresolved.
+Review events retain before-and-after scheduling fields, populated by the
+FSRS policy in [review workflow](review-workflow.md).
 
 ## Importance and source order
 
@@ -217,14 +217,13 @@ importance_band ASC, question_ordinal ASC
 
 A substantially more urgent question may therefore appear earlier, while
 questions in the same importance band retain the pedagogical sequence of the
-note. The precise bands remain part of the unresolved scheduling policy.
+note. The initial bands are overdue, due today, and first recall.
 
-Cross-file ordering within a collection is not yet specified. File order must
-not be inferred from unstable filesystem enumeration.
+Cross-file ordering within each band uses file path, then question ordinal.
+File order must not be inferred from unstable filesystem enumeration.
 
 The read-only inspector uses alphabetical `file_path` order solely for a
-deterministic library listing. This is not the future cross-file review order,
-which remains unresolved.
+deterministic library listing. The first recall milestone also uses this ordering within each priority band.
 
 ## Stable review sessions
 
@@ -276,14 +275,13 @@ The first interface milestone is a read-only inspector showing:
 - missing or duplicated identity diagnostics.
 
 This inspector validates the complete Markdown-to-SQLite-to-interface path
-before review outcomes or scheduling policy are implemented.
+and remains available alongside the writable practice screen.
 
 The inspector uses a native collapsed disclosure for answers so prompts remain
 scannable while answers are still inspectable. Expanded answers display a
 visible **A:** label beside the first line of answer content, with no extra
 blank line after the label. This is inspector presentation,
-not the progressive-reveal behavior of the future review screen, which remains
-unresolved.
+separate from practice, where Recall hides the answer until Reveal.
 
 Incremental notifications include affected file paths. The inspector replaces
 only those files in its in-memory question list; a full question reload is
@@ -326,23 +324,29 @@ The first implementation phase is complete when:
 
 ## Still unresolved
 
-This document intentionally does not decide:
-
-- review outcome vocabulary;
-- the scheduling algorithm or exact importance bands;
-- the interaction for changed content after it has been reviewed;
-- whether the review interface may edit Markdown;
-- cross-file ordering within a collection;
-- progressive answer reveal; or
-- multi-device synchronization of review history.
-
-Those decisions belong to the review workflow and scheduler design and must be
-agreed before their implementation.
+The [review workflow](review-workflow.md) records the initial rating vocabulary,
+FSRS policy, priority bands, cross-file order, and answer-reveal interaction.
+Advanced handling of changed content, Markdown edits from the
+website, and multi-device synchronization remain deferred.
 
 ## Obsidian study extension
 
 The first-study extension permits narrow SQLite study-state writes from the
-Obsidian plugin through the loopback service. It does not permit Markdown edits,
-grading, or scheduling through the web inspector. The interaction, initialization,
+Obsidian plugin through the loopback service. The subsequent FSRS milestone adds
+website study and grading; neither interface writes progress into Markdown. The interaction, initialization,
 edit behavior, and offline backup procedure are recorded in
 [source study](source-study-workflow.md#agreed-study-interaction).
+
+## Local FSRS milestone
+
+The authorized [review workflow](review-workflow.md) extends the inspection and
+Obsidian study slice with a writable local practice website. Both interfaces use
+the existing `study_state` records; first study never manufactures a recall event.
+The website can mark initial study and correct study status, with content and
+revision checks. Obsidian reflects those changes through its existing inline
+controls and derived note completion. Markdown remains authored content only.
+
+FSRS state and event details are stored separately from study state. Durable
+session metadata tracks study/recall mode, captured progress revisions, and
+completion alongside immutable content snapshots. Grading and queue completion
+commit together. Target-date planning is specified in the review workflow; neural scheduling remains deferred.

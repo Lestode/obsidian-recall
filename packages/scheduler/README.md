@@ -1,5 +1,4 @@
 # Recall scheduler
 
-This package is reserved for question selection, importance bands, and review
-scheduling. Those policies remain intentionally unresolved in
-`docs/review-workflow.md`; no scheduling behavior is implemented yet.
+Pinned FSRS-6 scheduling through ts-fsrs 5.4.2. See
+[review workflow](../../docs/review-workflow.md) for ratings, defaults, and scope.

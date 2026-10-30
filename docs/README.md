@@ -1,6 +1,6 @@
 # Obsidian Recall documentation
 
-Status: authoring, source preparation, read-only inspection, and Obsidian first study
+Status: authoring, source preparation, shared first study, and local FSRS recall
 
 This directory is the authoritative source for Obsidian Recall's product behavior. Code must conform to these documents. When behavior changes, update the relevant document before or alongside the implementation.
 
@@ -57,7 +57,9 @@ The current companion-service phase adds:
    Markdown/math, structured validation diagnostics, archive visibility,
    source hierarchy, manual recovery scans, and targeted incremental updates.
 
-Scheduling, grading, and writable review workflows remain later phases.
+The first writable milestone adds a project/folder practice dashboard, shared
+study status, progress-based recall queues, FSRS scheduling, and target-date planning. See
+[`review-workflow.md`](review-workflow.md) for the agreed policy and deferred work.
 
 Obsidian now provides per-question study controls in Live Preview and Reading
 view. Every existing or new question starts Not studied. An explicit Enter/click
@@ -69,8 +71,7 @@ File-list and open-title labels derive note completion from those question
 marks; see the [completion rules](source-study-workflow.md#chapter-and-note-completion).
 The local service stores progress separately from Markdown. See
 [`source-study-workflow.md`](source-study-workflow.md) for the interaction,
-connection requirements, and backup procedure. Consuming this status for recall
-sessions comes later.
+connection requirements, and backup procedure. The website consumes this same status for study and FSRS recall sessions.
 
 ## Change process
 

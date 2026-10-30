@@ -1,5 +1,47 @@
 # Implementation verification
 
+## Target-date planner — 2026-10-30
+
+- Optional per-scope plans persist separately from study state and review history.
+- Date previews expose daily introductions, review attempts, unmet target counts,
+  and explicitly illustrative Good/setback scenarios. No attempt is written by a
+  preview. Current-content Good/Easy evidence and deadline retention are separate.
+- Review uses inherited plans, current risk, and remaining daily introductions;
+  study in either interface counts. Editing/removing a plan preserves history.
+- Automated validation: 119 tests, TypeScript checking, and all builds pass.
+  Coverage includes invalid dates, insufficient coverage, changed content,
+  early at-risk recall, plan edits/removal, shared daily allowances, and backup.
+- Chrome verification on a synthetic vault covered preview, save/reload,
+  study allowance, rate edits, removal, and desktop/mobile layouts with no
+  JavaScript errors or horizontal overflow. Screenshots were inspected.
+- A forecast on a copied 128-question scope took about 110 ms locally.
+- Limitations: scenario ranges are not calibrated confidence intervals; no time
+  estimate is displayed without duration data. FSRS predicts recall, not Good.
+
+## FSRS milestone — 2026-10-30
+
+- Shared per-question study state is separate from recall events and survives
+  reindexing, moves, and process restart.
+- The practice dashboard exposes collection/folder scopes, unseen inclusion,
+  resumable snapshots, answer reveal, four ratings and FSRS interval previews.
+- Attempts atomically save an immutable content hash, before/after FSRS state,
+  engine version, scheduling fields, and queue completion. Exact retries are
+  idempotent; competing sessions cannot grade stale scheduling state.
+- The API validates write payloads and rejects foreign origins. A downloaded
+  SQLite backup reopens with study progress and review history intact.
+- Existing Obsidian inline controls share `study_state` with the website,
+  verify the vault path, and retain note-completion and content-change behavior.
+- Automated validation: 109 tests, TypeScript checking, and all builds pass.
+- Browser verification in installed Chrome on an isolated sample vault covered
+  initial study, keyboard controls, reload/resume, hidden/revealed answers,
+  ratings, library study correction, and a 390px layout with no horizontal
+  overflow or JavaScript errors. Desktop screenshots were visually inspected.
+- Limitation: the plugin compiles, but has not been exercised in a live Obsidian
+  window. No real vault or installed plugin has been modified by this verification.
+- Deadline forecasting was added in the milestone above; RWKV remains deferred.
+
+## Previous inspection milestone
+
 Verification date: 2026-10-22
 
 This checklist records the implementation pass against the authoritative
