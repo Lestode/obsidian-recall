@@ -22,7 +22,7 @@ The current implementation contains:
   identity and parser validation.
 
 The first interactive milestone adds shared study progress, a project/folder
-practice dashboard, resumable sessions, and FSRS recall scheduling with
+practice dashboard, progress-based queues, and FSRS recall scheduling with
 Again / Hard / Good / Easy ratings. Deadline forecasting and RWKV are deferred.
 
 ## Repository layout
@@ -53,10 +53,10 @@ Run the local inspector against a vault with:
 npm run start -- --vault "/absolute/path/to/vault"
 ```
 
-Then open `http://127.0.0.1:45871`. Choose a project and **Start practice**.
+Then open `http://127.0.0.1:45871`. Choose a project and **Review**.
 Unseen material is included by default. Study it and press **Studied**; on recall
 items reveal the answer, then use **1–4** to assess your attempt. **Projects**
-pauses the queue; **Resume** continues it. **Library** allows study-status corrections.
+leaves the queue; **Review** loads what needs practice now from saved progress. **Library** allows study-status corrections.
 
 In Obsidian, install the rebuilt plugin files and start the same local service.
 Study controls appear inline in Live Preview and Reading view. Click the

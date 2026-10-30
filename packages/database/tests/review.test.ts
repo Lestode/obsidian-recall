@@ -257,3 +257,22 @@ test("dashboard counts distinguish unseen, first recall, future and due recall",
     assert.deepEqual(store.projects(later).map(p=>[p.total,p.unseen,p.ready,p.due]), [[2,1,1,0]]);
   } finally { db.close(); }
 });
+
+test("returning to a folder uses saved progress rather than its abandoned queue", () => {
+  const { db, store } = setup();
+  try {
+    db.reconcileFull([record('q1'), record('q2'), record('q3')]);
+    store.markStudied('q1', 'v1', true, now);
+    const first = store.start(scope, now);
+    assert.equal(first.current?.questionId, 'q1');
+    store.act(first.id, 0, 'Good', now);
+    store.act(first.id, 1, 'studied', now);
+    // Leave q3 unanswered. New practice must retain study and scheduling changes.
+    const next = store.start(scope, now);
+    assert.notEqual(next.id, first.id);
+    assert.deepEqual(next.items.map(item => [item.questionId, item.mode]), [
+      ['q2', 'recall'], ['q3', 'study'],
+    ]);
+    assert.equal(db.getQuestion('q1')?.lastReviewedAt, now.toISOString());
+  } finally { db.close(); }
+});

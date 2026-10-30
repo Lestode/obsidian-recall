@@ -96,7 +96,6 @@ export function createRecallServer(options: {
       if (url.pathname === "/api/review/projects" && request.method === "GET") {
         json(response, {
           projects: reviews.projects(),
-          sessions: reviews.sessions(),
         });
         return;
       }

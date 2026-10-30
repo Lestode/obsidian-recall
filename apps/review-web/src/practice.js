@@ -7,8 +7,7 @@ export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
     revealed = false,
     busy = false,
     lastMessage = "",
-    projects = [],
-    sessions = [];
+    projects = [];
   let includeUnseen = localStorage.getItem("recall.includeUnseen") !== "false";
   const api = async (path, body) => {
     const response = await fetch(
@@ -60,14 +59,12 @@ export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
   async function home() {
     const data = await api("/api/review/projects");
     projects = data.projects;
-    sessions = data.sessions;
     session = null;
     const due = projects
       .filter((p) => p.folderPath === p.collectionPath)
       .reduce((n, p) => n + p.due + p.ready, 0);
     root.innerHTML = `<div class="practice-heading"><div><h2>Practice</h2><p class="muted">${due ? `${due} questions ready for recall.` : "Choose a project or folder to review."}</p></div>
       <label class="unseen-toggle"><input id="include-unseen" type="checkbox" ${includeUnseen ? "checked" : ""}> Include unseen material</label></div>
-      ${sessions.length ? `<section class="resume-list"><h3>Unfinished sessions</h3>${sessions.map((s) => `<button data-resume="${esc(s.id)}">Resume ${esc(s.scope.folderPath || s.scope.collectionPath || "all questions")} <span>→</span></button>`).join("")}</section>` : ""}
       <div class="project-list"><table class="project-table"><thead><tr><th scope="col">Project / folder</th><th scope="col">Ready</th><th scope="col">Unseen</th><th scope="col" class="total-column">Total</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead><tbody>${projects.map((p, i) => {
         const collection = p.folderPath === p.collectionPath;
         const relative = p.folderPath.startsWith(p.collectionPath + "/") ? p.folderPath.slice(p.collectionPath.length + 1) : p.label;
@@ -87,16 +84,6 @@ export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
             folderPath: p.folderPath,
             includeUnseen,
           });
-          revealed = false;
-          lastMessage = "";
-          renderSession();
-        }),
-      ),
-    );
-    root.querySelectorAll("[data-resume]").forEach((b) =>
-      b.addEventListener("click", () =>
-        run(async () => {
-          session = await api(`/api/review/sessions/${b.dataset.resume}`);
           revealed = false;
           lastMessage = "";
           renderSession();

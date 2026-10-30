@@ -200,22 +200,6 @@ export class ReviewStore {
     );
     return this.session(session.id, now);
   }
-  sessions() {
-    return this.db.connection
-      .prepare(
-        `SELECT DISTINCT s.id, s.created_at, s.scope_json FROM review_sessions s
-      JOIN recall_queue_items i ON i.session_id=s.id
-      JOIN review_session_items r ON r.session_id=i.session_id AND r.session_position=i.position
-      WHERE s.completed_at IS NULL AND i.completed_at IS NULL AND r.skipped_at IS NULL
-      ORDER BY s.created_at DESC LIMIT 20`,
-      )
-      .all()
-      .map((r) => ({
-        id: r.id,
-        createdAt: r.created_at,
-        scope: JSON.parse(String(r.scope_json)),
-      }));
-  }
   session(id: string, now = new Date()) {
     const session = this.db.getSession(id);
     if (!session) throw new ReviewError("Session not found.", 404);

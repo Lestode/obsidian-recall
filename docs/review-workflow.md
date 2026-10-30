@@ -29,8 +29,14 @@ answer until Reveal, then offers the following assessments:
 | Good | Essentials reconstructed independently with reasonable effort. Minor omissions are fine. |
 | Easy | Essentials reconstructed fluently with little effort. |
 
-Sessions have no chosen duration or question limit. Stop pauses a durable session;
-Resume continues it. Skip advances without marking studied or recording recall.
+Sessions have no chosen duration or question limit. Each folder has one Review
+action that creates a fresh queue from current study status and FSRS due dates.
+Returning to Projects or reloading leaves the queue; there is no unfinished-session
+list to manage. Saved attempts remain authoritative, so returning excludes
+completed recall until due again and retains completed study. Unanswered and
+skipped questions remain eligible. During active practice, immutable snapshots
+still keep the question order and presented content stable.
+Skip advances without marking studied or recording recall.
 The library can mark/unmark study status to correct mistakes; unmarking does not
 delete recall history and prevents future recall until studied again.
 
