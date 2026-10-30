@@ -100,7 +100,15 @@ export class ReviewStore {
     return p.studiedAt ? !q.dueAt || q.dueAt <= now.toISOString() : false;
   }
   projects(now = new Date()) {
-    const questions = this.db.listQuestions();
+    const questions = this.db.connection.prepare(`
+      SELECT q.collection_path, q.file_path, s.studied_at, r.due_at, r.last_reviewed_at
+      FROM questions q LEFT JOIN study_state s ON s.question_id=q.id
+      LEFT JOIN review_state r ON r.question_id=q.id WHERE q.archived_at IS NULL
+    `).all().map(row => ({
+      collectionPath: String(row.collection_path), filePath: String(row.file_path),
+      studied: !!row.studied_at, lastReviewedAt: row.last_reviewed_at,
+      eligible: !!row.studied_at && (!row.due_at || String(row.due_at) <= now.toISOString()),
+    }));
     const scopes = new Map<
       string,
       { collectionPath: string; folderPath: string; label: string }
@@ -130,15 +138,15 @@ export class ReviewStore {
         return {
           ...scope,
           total: items.length,
-          unseen: items.filter((q) => !this.progress(q.id).studiedAt).length,
-          ready: items.filter((q) => this.eligible(q, now) && !q.lastReviewedAt)
+          unseen: items.filter((q) => !q.studied).length,
+          ready: items.filter((q) => q.eligible && !q.lastReviewedAt)
             .length,
-          due: items.filter((q) => this.eligible(q, now) && !!q.lastReviewedAt)
+          due: items.filter((q) => q.eligible && !!q.lastReviewedAt)
             .length,
         };
       });
   }
-  private inScope(q: QuestionListItem, scope: Partial<Scope>) {
+  private inScope(q: Pick<QuestionListItem, "collectionPath" | "filePath">, scope: Partial<Scope>) {
     return (
       (!scope.collectionPath || q.collectionPath === scope.collectionPath) &&
       (!scope.folderPath ||

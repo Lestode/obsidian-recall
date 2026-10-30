@@ -238,3 +238,22 @@ test("Obsidian and website share study state and reject stale study queues", () 
     db.close();
   }
 });
+
+test("dashboard counts distinguish unseen, first recall, future and due recall", () => {
+  const { db, store } = setup();
+  try {
+    db.reconcileFull([record(), {...record('q2'), filePath: 'Course/Sub/Topic.md'}, record('q3')]);
+    store.markStudied('q1', 'v1', true, now);
+    store.markStudied('q2', 'v1', true, now);
+    const queue = store.start({folderPath: 'Course/Sub', includeUnseen: false}, now);
+    store.act(queue.id, 0, 'Good', now);
+    const counts = store.projects(now);
+    assert.deepEqual(counts.map(p => [p.folderPath,p.total,p.unseen,p.ready,p.due]), [
+      ['Course',3,1,1,0], ['Course/Sub',1,0,0,0],
+    ]);
+    const later = new Date(db.getQuestion('q2')!.dueAt!);
+    assert.equal(store.projects(later)[0]?.due, 1);
+    db.reconcileFull([record(),record('q3')]);
+    assert.deepEqual(store.projects(later).map(p=>[p.total,p.unseen,p.ready,p.due]), [[2,1,1,0]]);
+  } finally { db.close(); }
+});

@@ -1,4 +1,4 @@
-export function initPractice({ renderMarkdown, escapeHtml: esc }) {
+export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
   const root = document.querySelector("#practice");
   const library = document.querySelector("#library-layout");
   const practiceTab = document.querySelector("#practice-tab");
@@ -217,7 +217,6 @@ export function initPractice({ renderMarkdown, escapeHtml: esc }) {
       act(["Again", "Hard", "Good", "Easy"][Number(e.key) - 1]);
     }
   });
-  const events = new EventSource("/api/events");
   async function update() {
     if (busy) return;
     try {

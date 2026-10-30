@@ -68,6 +68,10 @@ twice: stale attempts are rejected, and exact request retries are idempotent.
 The service remains the only SQLite writer. Study/recall mutations are atomic. Both interfaces use `study_state`, including
 revision checks to reject stale study writes. Website study confirmation checks
 the current note on disk using the same safeguards as the plugin.
+Practice loads independently of the Library; full question rendering waits until
+the Library is opened. Dashboard counts use a single metadata query. Each visible
+browser tab shares one update connection between Practice and Library and closes
+it while hidden. Reloading the page does not request a vault scan.
 Progress updates notify browser clients; Obsidian inline controls refresh periodically.
 The service is loopback-only. Writes require JSON and a Recall-specific header;
 foreign browser origins and non-loopback Host values are rejected.

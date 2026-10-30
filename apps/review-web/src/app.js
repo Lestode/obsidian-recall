@@ -270,9 +270,24 @@ elements.rescan.addEventListener("click", async () => {
   }
 });
 
-const events = new EventSource("/api/events");
+const events = new EventTarget();
+let stream;
+function connectEvents() {
+  stream?.close();
+  if (document.hidden) return;
+  stream = new EventSource("/api/events");
+  for (const type of ["sync", "progress", "open", "error"]) {
+    stream.addEventListener(type, message => events.dispatchEvent(new MessageEvent(type, {data: message.data})));
+  }
+}
+document.addEventListener("visibilitychange", () => {
+  connectEvents();
+  if (!document.hidden) events.dispatchEvent(new MessageEvent("sync", {data: JSON.stringify({full: true})}));
+});
+connectEvents();
 events.addEventListener("sync", (message) => {
   const event = JSON.parse(message.data);
+  if (document.querySelector("#library-layout").hidden) { void loadStatus(); return; }
   if (event.type === "error") {
     void loadStatus();
   } else if (event.full) {
@@ -282,7 +297,7 @@ events.addEventListener("sync", (message) => {
   }
 });
 events.addEventListener("progress", () => {
-  void loadQuestions();
+  if (!document.querySelector("#library-layout").hidden) void loadQuestions();
 });
 events.addEventListener("open", () => {
   elements.sync.textContent = "Connected";
@@ -291,6 +306,8 @@ events.addEventListener("error", () => {
   elements.sync.textContent = "Reconnecting…";
 });
 
-await refresh();
-
-initPractice({ renderMarkdown, escapeHtml });
+document.querySelector("#library-tab").addEventListener("click", () => {
+  void refresh().catch(error => { elements.diagnostic.hidden = false; elements.diagnostic.textContent = error.message; });
+});
+void loadStatus();
+initPractice({ renderMarkdown, escapeHtml, events });
