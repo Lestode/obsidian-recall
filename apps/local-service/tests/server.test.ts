@@ -281,6 +281,28 @@ test("study and review API validates writes, rejects foreign origins and exports
       ).status,
       200,
     );
+    const target = new Date();
+    target.setDate(target.getDate() + 45);
+    const plan = {
+      collectionPath: "Course",
+      folderPath: "Course",
+      targetDate: target.toISOString().slice(0, 10),
+      retention: 0.9,
+      dailyNew: null,
+    };
+    assert.equal(
+      (await post("/api/review/plan/preview", { ...plan, retention: 2 }))
+        .status,
+      400,
+    );
+    const forecast = await post("/api/review/plan/preview", plan);
+    assert.equal(forecast.status, 200);
+    assert.equal(((await forecast.json()) as { total: number }).total, 1);
+    assert.equal((await post("/api/review/plan/save", plan)).status, 200);
+    const configured = (await (
+      await fetch(origin + "/api/review/projects")
+    ).json()) as { plans: unknown[] };
+    assert.equal(configured.plans.length, 1);
     const backup = await fetch(origin + "/api/backup");
     assert.equal(backup.status, 200);
     const file = path.join(vault, "backup.sqlite");
@@ -291,7 +313,13 @@ test("study and review API validates writes, rejects foreign origins and exports
       restored.connection.prepare("SELECT studied_at FROM study_state").get()
         ?.studied_at,
     );
+    assert.equal(
+      restored.connection.prepare("SELECT COUNT(*) n FROM review_plans").get()
+        ?.n,
+      1,
+    );
     restored.close();
+    assert.equal((await post("/api/review/plan/remove", plan)).status, 200);
   } finally {
     synchronizer.stop();
     server.closeAllConnections();

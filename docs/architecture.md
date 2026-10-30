@@ -56,4 +56,4 @@ controls and derived note completion. Markdown remains authored content only.
 FSRS state and event details are stored separately from study state. Durable
 session metadata tracks study/recall mode, captured progress revisions, and
 completion alongside immutable content snapshots. Grading and queue completion
-commit together. Deadline planning and neural scheduling remain deferred.
+commit together. Target-date planning is specified in the review workflow; neural scheduling remains deferred.

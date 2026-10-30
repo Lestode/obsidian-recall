@@ -1,8 +1,7 @@
 # Review workflow
 
 Status: first writable study and FSRS review milestone, authorized after the
-[review intent discussion](review-intent-draft.md). Deadline forecasting and
-RWKV are deferred. This document governs the implementation defaults below.
+[review intent discussion](review-intent-draft.md). Target-date planning is included; RWKV remains deferred. This document governs the implementation defaults below.
 
 ## Study and recall
 
@@ -55,7 +54,7 @@ both queues have items. Within recall, overdue (before today), due today, and
 first recall are separate priority bands; within each band use file path then
 source ordinal. This alphabetical cross-file ordering is a deterministic first
 release default, not a claim about pedagogical importance. Importance weighting
-and deadline-specific balancing remain later work.
+remains later work; target-date balancing is described below.
 
 Each queue captures immutable content versions and order. Reconciliation never
 reshuffles it. Archived pending items are skipped. On exhaustion, Continue starts
@@ -90,9 +89,49 @@ Never restore over a running database or place the live database in a sync folde
 
 ## Deferred
 
-Target-date workload forecasting, per-project intents beyond ordinary recall,
+Per-project intents beyond ordinary recall and target-date planning,
 RWKV, automatic parameter fitting, semantic importance, multi-device sync,
 progressive hints, and Markdown editing from the website are not in this milestone.
 
 References: [Anki ratings](https://docs.ankiweb.net/manual/studying#answer-buttons),
 [FSRS configuration](https://docs.ankiweb.net/manual/deck-options#fsrs).
+
+## Target-date planning
+
+Target-date planning is now authorized. Each collection/folder can save an optional
+calendar date and a recall-probability threshold (default 90%, adjustable 80–97%).
+The criterion is at least one Good/Easy on the current content after any later
+Again, plus FSRS-predicted successful recall at the target date above the threshold.
+This is not a probability of a Good rating or a guarantee of mastery.
+
+Preview before saving shows introductions and review attempts per day, including
+repeat attempts, with two illustrative scenarios: future Good answers and a
+setback scenario using recent Again frequency (smoothed with a 20% prior). This
+range is not a statistical confidence interval. Neither forecast writes attempts.
+No minutes are invented: time estimates wait for reliable duration measurements.
+All active questions in the selected scope count equally, including unseen ones.
+
+The recommended introduction rate covers remaining unseen material while reserving
+roughly the final 20% of days (at least one, at most seven) for recall. An optional
+daily override is allowed; insufficient coverage and very short deadlines are
+shown explicitly. The first recall of newly studied material is planned no earlier
+than the following calendar day. Planning uses the service's local calendar days,
+ends at the end of the selected day, and supports today through one year ahead.
+
+Saving a plan affects Review for that scope and descendant folders in the same
+collection; the most specific covering plan wins. Selecting a parent scope uses
+that parent's plan, not a mixture of descendant plans. Review alternates due or
+at-risk recall with today's remaining study allowance. It includes early review
+when predicted recall falls below the plan threshold, and a final-day check for
+missing Good/Easy evidence or insufficient deadline retention. It never changes
+FSRS history just to satisfy the deadline. Repeated clicks do not replenish study
+allowance; study on either interface counts. Turning unseen inclusion off still
+works but leaves coverage work outstanding. The allowance is guidance, not a
+session duration; all due review remains available.
+
+Date/rate/threshold edits recalculate from current state without resetting history.
+Removing a plan returns the scope to ordinary FSRS. Past plans are shown as expired
+and do not constrain ordinary practice. Existing active queues keep their snapshot;
+start Review again to apply a changed plan. Old-content Good evidence does not
+certify revised content. Forecasts show how many questions still miss the criterion
+in each scenario rather than promising success.

@@ -58,7 +58,7 @@ The current companion-service phase adds:
    source hierarchy, manual recovery scans, and targeted incremental updates.
 
 The first writable milestone adds a project/folder practice dashboard, shared
-study status, resumable recall sessions, and FSRS scheduling. See
+study status, progress-based recall queues, FSRS scheduling, and target-date planning. See
 [`review-workflow.md`](review-workflow.md) for the agreed policy and deferred work.
 
 Obsidian now provides per-question study controls in Live Preview and Reading

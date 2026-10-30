@@ -1,3 +1,4 @@
+import { openPlan } from "./planning.js";
 export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
   const root = document.querySelector("#practice");
   const library = document.querySelector("#library-layout");
@@ -7,7 +8,8 @@ export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
     revealed = false,
     busy = false,
     lastMessage = "",
-    projects = [];
+    projects = [],
+    plans = [];
   let includeUnseen = localStorage.getItem("recall.includeUnseen") !== "false";
   const api = async (path, body) => {
     const response = await fetch(
@@ -59,17 +61,38 @@ export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
   async function home() {
     const data = await api("/api/review/projects");
     projects = data.projects;
+    plans = data.plans || [];
     session = null;
     const due = projects
       .filter((p) => p.folderPath === p.collectionPath)
-      .reduce((n, p) => n + p.due + p.ready, 0);
+      .reduce((n, p) => n + (p.planToday?.reviews ?? p.due + p.ready), 0);
     root.innerHTML = `<div class="practice-heading"><div><h2>Practice</h2><p class="muted">${due ? `${due} questions ready for recall.` : "Choose a project or folder to review."}</p></div>
       <label class="unseen-toggle"><input id="include-unseen" type="checkbox" ${includeUnseen ? "checked" : ""}> Include unseen material</label></div>
-      <div class="project-list"><table class="project-table"><thead><tr><th scope="col">Project / folder</th><th scope="col">Ready</th><th scope="col">Unseen</th><th scope="col" class="total-column">Total</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead><tbody>${projects.map((p, i) => {
-        const collection = p.folderPath === p.collectionPath;
-        const relative = p.folderPath.startsWith(p.collectionPath + "/") ? p.folderPath.slice(p.collectionPath.length + 1) : p.label;
-        return `<tr class="${collection ? "collection-row" : "folder-row"}"><th scope="row"><span class="project-name">${esc(collection ? p.label : relative)}</span>${collection ? '<span class="project-kind">Collection</span>' : `<span class="project-kind">${esc(p.collectionPath)}</span>`}</th><td>${p.due + p.ready}</td><td>${p.unseen}</td><td class="total-column">${p.total}</td><td><button data-start="${i}" aria-label="Review ${esc(p.label)}">Review</button></td></tr>`;
-      }).join("")}</tbody></table>${projects.length ? "" : '<p class="empty">No indexed collections.</p>'}</div>`;
+      <div class="project-list"><table class="project-table"><thead><tr><th scope="col">Project / folder</th><th scope="col">Ready</th><th scope="col">Unseen</th><th scope="col" class="total-column">Total</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead><tbody>${projects
+        .map((p, i) => {
+          const plan = plans
+            .filter(
+              (plan) =>
+                plan.collectionPath === p.collectionPath &&
+                (plan.folderPath === "." ||
+                  p.folderPath === plan.folderPath ||
+                  p.folderPath.startsWith(plan.folderPath + "/")),
+            )
+            .sort((a, b) => b.folderPath.length - a.folderPath.length)[0];
+          const collection = p.folderPath === p.collectionPath;
+          const relative = p.folderPath.startsWith(p.collectionPath + "/")
+            ? p.folderPath.slice(p.collectionPath.length + 1)
+            : p.label;
+          return `<tr class="${collection ? "collection-row" : "folder-row"}"><th scope="row"><span class="project-name">${esc(collection ? p.label : relative)}</span>${plan ? `<span class="project-deadline">Target: ${esc(plan.targetDate)} · ${Math.round(plan.retention * 100)}% recall threshold${p.planToday ? ` · ${p.planToday.introductions} unseen left today` : " · expired"}</span>` : ""}${collection ? '<span class="project-kind">Collection</span>' : `<span class="project-kind">${esc(p.collectionPath)}</span>`}</th><td>${p.planToday?.reviews ?? p.due + p.ready}</td><td>${p.unseen}</td><td class="total-column">${p.total}</td><td class="project-actions"><button data-plan="${i}" aria-label="Plan ${esc(p.label)}">${plan ? "Edit date" : "Set date"}</button><button data-start="${i}" aria-label="Review ${esc(p.label)}">Review</button></td></tr>`;
+        })
+        .join(
+          "",
+        )}</tbody></table>${projects.length ? "" : '<p class="empty">No indexed collections.</p>'}</div>`;
+    root.querySelectorAll("[data-plan]").forEach((button) =>
+      button.addEventListener("click", () => {
+        openPlan(projects[Number(button.dataset.plan)], plans, api, esc, home);
+      }),
+    );
     root.querySelector("#include-unseen").addEventListener("change", (e) => {
       includeUnseen = e.target.checked;
       localStorage.setItem("recall.includeUnseen", String(includeUnseen));

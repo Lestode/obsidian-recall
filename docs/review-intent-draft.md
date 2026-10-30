@@ -19,7 +19,7 @@
 - **Pace tracking may help after I start:** Comparing my actual progress with the plan could be useful once I have chosen a date. It is a possible follow-up feature, not the purpose of the date-selection preview.
 - **The plan remains editable:** I can change the target date later and see the revised expected workload. Estimates should use my progress and recall history, including last-recall dates, without resetting that history.
 - **Balance coverage and returning reviews:** The goal is to know the whole selected scope well enough by the deadline. Neither unseen material nor returning reviews should automatically take all the available effort. Some material may matter more than other material; how that importance is expressed remains open.
-- **Good enough is sufficient:** I want useful command of the material by the date, not perfect recall of every question. The exact success criterion remains to be defined.
+- **Good enough is sufficient:** I want useful command of the material by the date, not perfect recall of every question. The target is at least one Good/Easy on current content after any later Again, plus sufficient predicted successful recall at the deadline.
 - **Estimates should be honest:** Workload predictions are estimates, not guarantees. They should improve as the system learns about my pace and recall outcomes.
 
 ## Agreed recall criterion and proposed project-level evidence
@@ -39,11 +39,11 @@
 ## Still to decide
 
 - Further refinements to the initial-study interaction. The first implementation shares database status through the service and does not write progress into Markdown.
-- How project-level readiness is estimated from the agreed recall criterion; the first implementation uses the assessment meanings and FSRS defaults in [review-workflow.md](review-workflow.md).
+- Further calibration of forecast scenarios; the target criterion and first planner policy are specified in [review-workflow.md](review-workflow.md).
 - How question importance is expressed and how it affects the balance between coverage and returning reviews.
-- How FSRS predictions feed the future target-date planner. The first implementation pins FSRS-6 and its defaults in the review workflow.
+- Time estimates once reliable duration data is available. The target-date planner currently forecasts question and review-attempt counts.
 - How study status is represented in the database separately from recall history. The current `new` status means an active question has no `review_state` row; it does not reliably identify unseen material. Study tracking is now separate in `study_state`; it is not inferred from `new`.
 
 This draft captures intent and the chosen model direction for validation. It does not fix model versions or scheduling policy, define assessment buttons, or change the current implementation scope.
 
-The initial implementation is now authorized and specified in [review-workflow.md](review-workflow.md); remaining planning goals above do not imply implemented forecasting.
+The initial implementation is now authorized and specified in [review-workflow.md](review-workflow.md); target-date planning is now also authorized under its documented defaults.

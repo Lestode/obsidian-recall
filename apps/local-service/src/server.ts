@@ -8,6 +8,7 @@ import path from "node:path";
 import {
   ReviewStore,
   ReviewError,
+  PlanError,
   StudyConflict,
   type RecallDatabase,
 } from "@recall/database";
@@ -96,7 +97,25 @@ export function createRecallServer(options: {
       if (url.pathname === "/api/review/projects" && request.method === "GET") {
         json(response, {
           projects: reviews.projects(),
+          plans: reviews.plans.list(),
         });
+        return;
+      }
+      if (
+        url.pathname.startsWith("/api/review/plan/") &&
+        request.method === "POST"
+      ) {
+        const body = await readBody();
+        const action = url.pathname.slice("/api/review/plan/".length);
+        if (action === "preview") json(response, reviews.plans.preview(body));
+        else if (action === "save") {
+          json(response, { plan: reviews.plans.save(body) });
+          notifyProgress();
+        } else if (action === "remove") {
+          reviews.plans.remove(reviews.plans.validateScope(body));
+          json(response, { removed: true });
+          notifyProgress();
+        } else throw new ReviewError("Unknown plan action.", 404);
         return;
       }
       if (url.pathname === "/api/review/study" && request.method === "GET") {
@@ -357,7 +376,7 @@ export function createRecallServer(options: {
       json(
         response,
         { error: error instanceof Error ? error.message : "Request failed." },
-        error instanceof ReviewError
+        error instanceof ReviewError || error instanceof PlanError
           ? error.status
           : error instanceof StudyConflict
             ? 409

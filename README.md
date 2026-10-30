@@ -64,6 +64,14 @@ Reviewed / Not reviewed label, or press Enter with the cursor on a question.
 The website and Obsidian share the same study state. Configure a nondefault
 service port in plugin settings; the plugin verifies the connected vault.
 
+Use **Set date** next to a project or folder to preview a deadline plan before
+saving. The preview shows daily introductions and recall attempts under two
+illustrative scenarios, with the number still below target at the deadline.
+The default threshold is 90% predicted successful recall, alongside Good/Easy
+evidence for every question. Edit the date, threshold, or introduction rate at
+any time; saved plans guide Review without resetting history. Time estimates
+are not shown until reliable duration data is available.
+
 Use **Export database** to save a consistent backup of progress and history.
 For restore, stop the service first, retain the old database, replace it with
 the backup, remove obsolete `-wal` and `-shm` sidecars, and restart against the

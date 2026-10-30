@@ -326,7 +326,7 @@ The first implementation phase is complete when:
 
 The [review workflow](review-workflow.md) records the initial rating vocabulary,
 FSRS policy, priority bands, cross-file order, and answer-reveal interaction.
-Advanced handling of changed content, deadline planning, Markdown edits from the
+Advanced handling of changed content, Markdown edits from the
 website, and multi-device synchronization remain deferred.
 
 ## Obsidian study extension
@@ -349,4 +349,4 @@ controls and derived note completion. Markdown remains authored content only.
 FSRS state and event details are stored separately from study state. Durable
 session metadata tracks study/recall mode, captured progress revisions, and
 completion alongside immutable content snapshots. Grading and queue completion
-commit together. Deadline planning and neural scheduling remain deferred.
+commit together. Target-date planning is specified in the review workflow; neural scheduling remains deferred.

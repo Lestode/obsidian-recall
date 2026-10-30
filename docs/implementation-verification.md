@@ -1,5 +1,23 @@
 # Implementation verification
 
+## Target-date planner — 2026-10-30
+
+- Optional per-scope plans persist separately from study state and review history.
+- Date previews expose daily introductions, review attempts, unmet target counts,
+  and explicitly illustrative Good/setback scenarios. No attempt is written by a
+  preview. Current-content Good/Easy evidence and deadline retention are separate.
+- Review uses inherited plans, current risk, and remaining daily introductions;
+  study in either interface counts. Editing/removing a plan preserves history.
+- Automated validation: 119 tests, TypeScript checking, and all builds pass.
+  Coverage includes invalid dates, insufficient coverage, changed content,
+  early at-risk recall, plan edits/removal, shared daily allowances, and backup.
+- Chrome verification on a synthetic vault covered preview, save/reload,
+  study allowance, rate edits, removal, and desktop/mobile layouts with no
+  JavaScript errors or horizontal overflow. Screenshots were inspected.
+- A forecast on a copied 128-question scope took about 110 ms locally.
+- Limitations: scenario ranges are not calibrated confidence intervals; no time
+  estimate is displayed without duration data. FSRS predicts recall, not Good.
+
 ## FSRS milestone — 2026-10-30
 
 - Shared per-question study state is separate from recall events and survives
@@ -20,7 +38,7 @@
   overflow or JavaScript errors. Desktop screenshots were visually inspected.
 - Limitation: the plugin compiles, but has not been exercised in a live Obsidian
   window. No real vault or installed plugin has been modified by this verification.
-- Deadline forecasting and RWKV remain deferred.
+- Deadline forecasting was added in the milestone above; RWKV remains deferred.
 
 ## Previous inspection milestone
 

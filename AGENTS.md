@@ -17,11 +17,11 @@ When asked to generate Recall questions from a PDF or learning website, use
 It defines source reading, content checks, destination and copy confirmation,
 and the validated writer; the user should not manage intermediate drafts.
 
-The current phase includes shared study progress and the initial FSRS review
-milestone in [`docs/review-workflow.md`](docs/review-workflow.md), built on the
+The current phase includes shared study progress, FSRS review, and target-date planning
+as specified in [`docs/review-workflow.md`](docs/review-workflow.md), built on the
 indexing and snapshot contract in
 [`docs/synchronization-and-storage.md`](docs/synchronization-and-storage.md).
-Deadline forecasting, RWKV, Markdown edits from the web interface, and
+RWKV, Markdown edits from the web interface, and
 multi-device synchronization remain deferred until their decisions are resolved.
 
 ## Product constraints

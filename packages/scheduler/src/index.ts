@@ -40,3 +40,12 @@ export function preview(
     ]),
   ) as Record<Assessment, string>;
 }
+
+/** Probability of successful recall, not of a particular answer-button rating. */
+export function recallProbability(previous: string | null, at: Date): number {
+  if (!previous) return 0;
+  const card = JSON.parse(previous) as CardInput;
+  if (!card.last_review) return 0;
+  const value = scheduler.get_retrievability(card, at, false);
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
+}

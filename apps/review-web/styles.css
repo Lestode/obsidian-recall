@@ -183,3 +183,41 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
  main { grid-template-columns: 1fr; }
  .library { padding: 20px 14px; }
 }
+
+.project-table th:last-child { width: 158px; }
+.project-table th:first-child { width: 51%; }
+.project-actions { white-space: nowrap; }
+.project-actions button + button { margin-left: 6px; }
+.project-deadline { display: block; color: var(--accent); font-size: 11px; margin-top: 4px; }
+.plan-dialog { width: min(850px, calc(100vw - 32px)); max-height: 90vh; padding: 24px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.plan-dialog::backdrop { background: #15151b66; }
+.plan-heading { display: flex; justify-content: space-between; gap: 16px; }
+.plan-heading h2 { font-size: 20px; margin-bottom: 6px; }
+.plan-heading p { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.plan-heading button { align-self: flex-start; border: 0; background: transparent; font-size: 22px; color: var(--ink); }
+.plan-fields { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin: 24px 0; }
+.plan-fields label { display: grid; align-content: start; gap: 8px; font-size: 12px; }
+.plan-fields input,.plan-fields select { width: 100%; padding: 8px; border: 1px solid #94909e; border-radius: 4px; background: white; color: var(--ink); font: inherit; }
+.plan-fields small { color: var(--muted); }
+.plan-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 16px 0; border-block: 1px solid var(--line); margin-bottom: 16px; }
+.plan-stats strong { display: block; font-size: 22px; margin-bottom: 6px; }
+.plan-stats span,.plan-assumptions { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.plan-schedule { margin: 20px 0; }
+.plan-schedule table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; color: var(--ink); }
+.plan-schedule td,.plan-schedule th { text-align: left; border-bottom: 1px solid var(--line); padding: 7px; }
+.plan-schedule td:last-child { width: 30%; }
+.workload-bar { display: block; height: 8px; background: var(--accent); }
+.plan-footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+#remove-plan { border: 1px solid var(--line); background: white; color: var(--ink); border-radius: 4px; padding: 8px; }
+#plan-error { color: #9a3025; }
+@media(max-width:760px) {
+ .project-table th:last-child { width: 72px; }
+ .project-table th:first-child { width: 47%; }
+ .project-actions { white-space: normal; }
+ .project-actions button { width: 100%; padding: 5px; }
+ .project-actions button + button { margin: 5px 0 0; }
+ .plan-dialog { padding: 16px; }
+ .plan-fields { grid-template-columns: 1fr; }
+ .plan-stats { gap: 10px; }
+ .plan-stats strong { font-size: 18px; }
+}

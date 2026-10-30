@@ -1,3 +1,4 @@
+import { PlanStore } from "./planning";
 import { randomUUID } from "node:crypto";
 import {
   ENGINE,
@@ -29,6 +30,7 @@ export interface Progress {
 }
 
 export class ReviewStore {
+  readonly plans: PlanStore;
   constructor(readonly db: RecallDatabase) {
     db.connection.exec(`
       CREATE TABLE IF NOT EXISTS fsrs_cards (
@@ -46,6 +48,7 @@ export class ReviewStore {
         previous_card_json TEXT, next_card_json TEXT NOT NULL
       );
     `);
+    this.plans = new PlanStore(db);
   }
   private transaction<T>(fn: () => T): T {
     return this.db.transaction(fn);
@@ -100,15 +103,25 @@ export class ReviewStore {
     return p.studiedAt ? !q.dueAt || q.dueAt <= now.toISOString() : false;
   }
   projects(now = new Date()) {
-    const questions = this.db.connection.prepare(`
-      SELECT q.collection_path, q.file_path, s.studied_at, r.due_at, r.last_reviewed_at
+    const questions = this.db.connection
+      .prepare(
+        `
+      SELECT q.id, q.collection_path, q.file_path, s.studied_at, r.due_at, r.last_reviewed_at
       FROM questions q LEFT JOIN study_state s ON s.question_id=q.id
       LEFT JOIN review_state r ON r.question_id=q.id WHERE q.archived_at IS NULL
-    `).all().map(row => ({
-      collectionPath: String(row.collection_path), filePath: String(row.file_path),
-      studied: !!row.studied_at, lastReviewedAt: row.last_reviewed_at,
-      eligible: !!row.studied_at && (!row.due_at || String(row.due_at) <= now.toISOString()),
-    }));
+    `,
+      )
+      .all()
+      .map((row) => ({
+        id: String(row.id),
+        collectionPath: String(row.collection_path),
+        filePath: String(row.file_path),
+        studied: !!row.studied_at,
+        lastReviewedAt: row.last_reviewed_at,
+        eligible:
+          !!row.studied_at &&
+          (!row.due_at || String(row.due_at) <= now.toISOString()),
+      }));
     const scopes = new Map<
       string,
       { collectionPath: string; folderPath: string; label: string }
@@ -135,18 +148,32 @@ export class ReviewStore {
       .sort((a, b) => a.label.localeCompare(b.label))
       .map((scope) => {
         const items = questions.filter((q) => this.inScope(q, scope));
+        const planned = this.plans.selection(scope, now);
         return {
           ...scope,
+          planToday: planned
+            ? {
+                targetDate: planned.plan.targetDate,
+                retention: planned.plan.retention,
+                introductions: Math.min(
+                  planned.rate.remainingToday,
+                  items.filter((q) => !q.studied).length,
+                ),
+                reviews: items.filter((q) => planned.recallIds.has(q.id))
+                  .length,
+              }
+            : null,
           total: items.length,
           unseen: items.filter((q) => !q.studied).length,
-          ready: items.filter((q) => q.eligible && !q.lastReviewedAt)
-            .length,
-          due: items.filter((q) => q.eligible && !!q.lastReviewedAt)
-            .length,
+          ready: items.filter((q) => q.eligible && !q.lastReviewedAt).length,
+          due: items.filter((q) => q.eligible && !!q.lastReviewedAt).length,
         };
       });
   }
-  private inScope(q: Pick<QuestionListItem, "collectionPath" | "filePath">, scope: Partial<Scope>) {
+  private inScope(
+    q: Pick<QuestionListItem, "collectionPath" | "filePath">,
+    scope: Partial<Scope>,
+  ) {
     return (
       (!scope.collectionPath || q.collectionPath === scope.collectionPath) &&
       (!scope.folderPath ||
@@ -162,17 +189,29 @@ export class ReviewStore {
     today.setHours(0, 0, 0, 0);
     const band = (q: QuestionListItem) =>
       !q.lastReviewedAt ? 2 : q.dueAt && q.dueAt < today.toISOString() ? 0 : 1;
+    const planned = scope.collectionPath
+      ? this.plans.selection(
+          {
+            collectionPath: scope.collectionPath,
+            folderPath: scope.folderPath ?? scope.collectionPath,
+          },
+          now,
+        )
+      : null;
     const recall = all
-      .filter((q) => this.eligible(q, now))
+      .filter((q) =>
+        planned ? planned.recallIds.has(q.id) : this.eligible(q, now),
+      )
       .sort(
         (a, b) =>
           band(a) - band(b) ||
           a.filePath.localeCompare(b.filePath) ||
           a.questionOrdinal - b.questionOrdinal,
       );
-    const unseen = scope.includeUnseen
+    let unseen = scope.includeUnseen
       ? all.filter((q) => !this.progress(q.id).studiedAt)
       : [];
+    if (planned) unseen = unseen.slice(0, planned.rate.remainingToday);
     const queue: { q: QuestionListItem; mode: string }[] = [];
     for (let i = 0; i < Math.max(recall.length, unseen.length); i++) {
       if (recall[i]) queue.push({ q: recall[i]!, mode: "recall" });
