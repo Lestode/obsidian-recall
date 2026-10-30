@@ -15,7 +15,9 @@ syntax is written to Markdown. Study status survives moves, reindexing, and rest
 Existing questions without study records start unstudied; legacy review history
 is preserved, but does not silently manufacture a study mark.
 
-The website shows collections and folders with counts of unseen, ready for a
+The website uses a compact application layout: system fonts, a simple project/folder
+list with aligned counts and a Review action, and an undecorated question screen.
+It shows collections and folders with counts of unseen, ready for a
 first recall, and due questions. Unseen material is included by default and can
 be disabled. A study item shows its answer immediately. A recall item hides the
 answer until Reveal, then offers the following assessments:

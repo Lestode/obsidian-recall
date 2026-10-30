@@ -67,20 +67,12 @@ export function initPractice({ renderMarkdown, escapeHtml: esc }) {
       .reduce((n, p) => n + p.due + p.ready, 0);
     root.innerHTML = `<div class="practice-heading"><div><h2>Practice</h2><p class="muted">${due ? `${due} questions ready for recall.` : "Choose a project or folder to review."}</p></div>
       <label class="unseen-toggle"><input id="include-unseen" type="checkbox" ${includeUnseen ? "checked" : ""}> Include unseen material</label></div>
-      ${sessions.length ? `<section class="resume-list"><h3>Pick up where you left off</h3>${sessions.map((s) => `<button data-resume="${esc(s.id)}">Resume ${esc(s.scope.folderPath || s.scope.collectionPath || "all questions")} <span>→</span></button>`).join("")}</section>` : ""}
-      <div class="project-grid">${
-        projects
-          .map(
-            (
-              p,
-              i,
-            ) => `<article class="project-card"><p class="eyebrow">${p.folderPath === p.collectionPath ? "COLLECTION" : "FOLDER"}</p><h3>${esc(p.label)}</h3>
-        <div class="project-counts"><div><strong>${p.due + p.ready}</strong><span>ready to recall</span></div><div><strong>${p.unseen}</strong><span>not yet studied</span></div></div>
-        <div class="project-footer"><span>${p.total} questions</span><button data-start="${i}">${p.due + p.ready || (includeUnseen && p.unseen) ? "Start practice" : "Check for reviews"} <span aria-hidden="true">→</span></button></div></article>`,
-          )
-          .join("") ||
-        '<div class="empty">Your Recall collections will appear here once the vault is indexed.</div>'
-      }</div>`;
+      ${sessions.length ? `<section class="resume-list"><h3>Unfinished sessions</h3>${sessions.map((s) => `<button data-resume="${esc(s.id)}">Resume ${esc(s.scope.folderPath || s.scope.collectionPath || "all questions")} <span>→</span></button>`).join("")}</section>` : ""}
+      <div class="project-list"><table class="project-table"><thead><tr><th scope="col">Project / folder</th><th scope="col">Ready</th><th scope="col">Unseen</th><th scope="col" class="total-column">Total</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead><tbody>${projects.map((p, i) => {
+        const collection = p.folderPath === p.collectionPath;
+        const relative = p.folderPath.startsWith(p.collectionPath + "/") ? p.folderPath.slice(p.collectionPath.length + 1) : p.label;
+        return `<tr class="${collection ? "collection-row" : "folder-row"}"><th scope="row"><span class="project-name">${esc(collection ? p.label : relative)}</span>${collection ? '<span class="project-kind">Collection</span>' : `<span class="project-kind">${esc(p.collectionPath)}</span>`}</th><td>${p.due + p.ready}</td><td>${p.unseen}</td><td class="total-column">${p.total}</td><td><button data-start="${i}" aria-label="Review ${esc(p.label)}">Review</button></td></tr>`;
+      }).join("")}</tbody></table>${projects.length ? "" : '<p class="empty">No indexed collections.</p>'}</div>`;
     root.querySelector("#include-unseen").addEventListener("change", (e) => {
       includeUnseen = e.target.checked;
       localStorage.setItem("recall.includeUnseen", String(includeUnseen));
@@ -138,8 +130,8 @@ export function initPractice({ renderMarkdown, escapeHtml: esc }) {
         <div class="focus-prompt markdown">${renderMarkdown(q.prompt, q.questionId)}</div>
         ${q.mode === "study" || revealed ? `<div class="focus-answer markdown">${q.answer ? renderMarkdown(q.answer, q.questionId) : "<em>No answer written yet. You can still assess your own recall.</em>"}</div>` : '<div class="recall-space"><p>Reconstruct the essentials before revealing the answer.</p><button class="primary" id="reveal-answer">Reveal answer <kbd>Space</kbd></button></div>'}
         <div class="focus-actions">${q.mode === "study" ? '<p class="muted">Read the material, then confirm you have studied it.</p><button class="primary" id="mark-studied">✓ Studied — next <kbd>Enter</kbd></button>' : revealed ? `<p class="muted">Essentials recalled independently; minor omissions are okay.</p><div class="rating-grid">${["Again", "Hard", "Good", "Easy"].map((rating, i) => `<button class="rating rating-${rating.toLowerCase()}" data-rating="${rating}" title="${["Missing essentials, crucial error, or needed help", "Recalled with substantial effort or doubt", "Recalled with reasonable effort", "Recalled fluently with little effort"][i]}"><kbd>${i + 1}</kbd><strong>${rating}</strong><small>${dueLabel(q.preview[rating])}</small></button>`).join("")}</div>` : ""}</div>
-        <div class="focus-bottom"><button id="skip-question">Skip for now</button><span>Stop whenever you like. Your progress is saved.</span></div></article>`
-          : `<div class="queue-complete"><span class="completion-mark">✓</span><h2>This queue is complete.</h2><p>Keep going with questions that are ready now, or return later.</p><button class="primary" id="continue-practice">Check for more</button></div>`
+        <div class="focus-bottom"><button id="skip-question">Skip for now</button><span>Progress saved automatically.</span></div></article>`
+          : `<div class="queue-complete"><h2>This queue is complete.</h2><p>Keep going with questions that are ready now, or return later.</p><button class="primary" id="continue-practice">Check for more</button></div>`
       }`;
     root
       .querySelector("#stop-practice")
