@@ -414,6 +414,7 @@ export class RecallDatabase {
     orderedQuestionIds: string[],
     createdAt = new Date().toISOString(),
     id: string = randomUUID(),
+    initialize?: (sessionId: string) => void,
   ): ReviewSession {
     return this.transaction(() => {
       const revision = this.revision();
@@ -439,6 +440,7 @@ export class RecallDatabase {
       items.forEach((item, position) => {
         insertItem.run(id, position, item.questionId, item.contentHash);
       });
+      initialize?.(id);
       const session = this.getSession(id);
       if (!session) throw new Error(`Could not read newly created review session ${id}.`);
       return session;
@@ -520,3 +522,5 @@ export class RecallDatabase {
     }
   }
 }
+
+export { ReviewStore, ReviewError } from "./review";

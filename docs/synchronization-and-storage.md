@@ -1,7 +1,8 @@
 # Synchronization, storage, and source ordering
 
-Status: implementation baseline for the Markdown-to-SQLite read-only inspection
-phase. Scheduling and grading decisions remain out of scope.
+Status: indexing and session baseline, extended by the first writable study and
+FSRS milestone in [review-workflow.md](review-workflow.md). That document governs
+the initial queue ordering, ratings, scheduling defaults, and backup procedure.
 
 ## Purpose
 
@@ -38,8 +39,7 @@ The responsibilities are separated as follows:
 - `core` contains the Markdown grammar, parser, shared types, and content
   hashing so the plugin and service interpret questions identically.
 - `database` contains the schema, migrations, and reconciliation operations.
-- `scheduler` will contain selection and scheduling policy after that policy is
-  agreed.
+- `scheduler` wraps the pinned FSRS engine; the database review store builds queues.
 
 The installed Obsidian plugin directory contains build artifacts only. It is
 not an authoritative source directory.
@@ -69,7 +69,7 @@ review history.
 
 The live database must not be placed inside a cloud-synchronized Obsidian
 vault. It belongs in the operating system's application-data directory and
-will later need explicit backup and export behaviour.
+can be exported from the website as a consistent SQLite backup.
 
 ## Indexed question position
 
@@ -197,8 +197,11 @@ At minimum, the planned database separates:
 | `review_session_items` | Ordered question IDs and content hashes for a session |
 
 These stores and their initial columns are implemented in the database package.
-Review events retain before-and-after scheduling fields, although the policy
-that will populate them remains unresolved.
+Review events retain before-and-after scheduling fields. `study_progress` stores
+study state separately; `fsrs_cards` stores versioned scheduling state;
+`fsrs_event_details` stores the full before/after card and engine version;
+`recall_queue_items` stores item mode, expected state version, and completion.
+The added progress tables are not cleared by Markdown reconciliation.
 
 ## Importance and source order
 
@@ -216,14 +219,13 @@ importance_band ASC, question_ordinal ASC
 
 A substantially more urgent question may therefore appear earlier, while
 questions in the same importance band retain the pedagogical sequence of the
-note. The precise bands remain part of the unresolved scheduling policy.
+note. The first milestone defines these bands in [review-workflow.md](review-workflow.md).
 
-Cross-file ordering within a collection is not yet specified. File order must
-not be inferred from unstable filesystem enumeration.
+The first milestone uses alphabetical file paths within each priority band.
+This deterministic default can be refined later; filesystem enumeration is not used.
 
 The read-only inspector uses alphabetical `file_path` order solely for a
-deterministic library listing. This is not the future cross-file review order,
-which remains unresolved.
+deterministic library listing. The first review milestone also uses that order within each priority band.
 
 ## Stable review sessions
 
@@ -279,8 +281,7 @@ before review outcomes or scheduling policy are implemented.
 
 The inspector uses a native collapsed disclosure for answers so prompts remain
 scannable while answers are still inspectable. This is inspector presentation,
-not the progressive-reveal behavior of the future review screen, which remains
-unresolved.
+separate from the review screen, which uses one explicit answer reveal.
 
 Incremental notifications include affected file paths. The inspector replaces
 only those files in its in-memory question list; a full question reload is
@@ -297,8 +298,8 @@ database revision.
 - A failed transaction exposes none of its partial changes.
 - Watcher overflow or uncertainty schedules a complete reconciliation.
 - Deleting the rebuildable index does not delete review events or review state.
-- Deleting the entire database loses review history, so backup and restore must
-  be designed before the review store becomes the sole durable history.
+- Deleting the entire database loses review history, so use the export and offline-restore
+  procedure in [review-workflow.md](review-workflow.md).
 
 ## First implementation acceptance criteria
 
@@ -314,17 +315,9 @@ The first implementation phase is complete when:
 7. Automated tests cover moves between files, edit bursts, transaction failure,
    duplicated identity, archival, and stable session snapshots.
 
-## Still unresolved
+## Deferred review decisions
 
-This document intentionally does not decide:
-
-- review outcome vocabulary;
-- the scheduling algorithm or exact importance bands;
-- the interaction for changed content after it has been reviewed;
-- whether the review interface may edit Markdown;
-- cross-file ordering within a collection;
-- progressive answer reveal; or
-- multi-device synchronization of review history.
-
-Those decisions belong to the review workflow and scheduler design and must be
-agreed before their implementation.
+The first review milestone resolves ratings, FSRS defaults, answer reveal, and
+initial queue order in [review-workflow.md](review-workflow.md). Advanced
+changed-content policy, importance weighting, deadline planning, Markdown edits
+from the website, and multi-device synchronization remain deferred.

@@ -2,5 +2,11 @@
   "name": "@recall/scheduler",
   "version": "0.2.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "ts-fsrs": "5.4.2"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
 }

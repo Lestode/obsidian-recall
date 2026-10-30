@@ -1,5 +1,29 @@
 # Implementation verification
 
+## FSRS milestone — 2026-10-30
+
+- Shared per-question study state is separate from recall events and survives
+  reindexing, moves, and process restart.
+- The practice dashboard exposes collection/folder scopes, unseen inclusion,
+  resumable snapshots, answer reveal, four ratings and FSRS interval previews.
+- Attempts atomically save an immutable content hash, before/after FSRS state,
+  engine version, scheduling fields, and queue completion. Exact retries are
+  idempotent; competing sessions cannot grade stale scheduling state.
+- The API validates write payloads and rejects foreign origins. A downloaded
+  SQLite backup reopens with study progress and review history intact.
+- The Obsidian study panel uses the same service, verifies the vault path,
+  polls shared state, and leaves ordinary editor Enter behavior untouched.
+- Automated validation: 76 tests, TypeScript checking, and all builds pass.
+- Browser verification in installed Chrome on an isolated sample vault covered
+  initial study, keyboard controls, reload/resume, hidden/revealed answers,
+  ratings, library study correction, and a 390px layout with no horizontal
+  overflow or JavaScript errors. Desktop screenshots were visually inspected.
+- Limitation: the panel compiles, but has not been exercised in a live Obsidian
+  window. No real vault or installed plugin has been modified by this verification.
+- Deadline forecasting and RWKV remain deferred.
+
+## Previous inspection milestone
+
 Verification date: 2026-10-22
 
 This checklist records the implementation pass against the authoritative

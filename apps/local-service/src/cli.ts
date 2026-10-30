@@ -64,6 +64,7 @@ const server = createRecallServer({
   synchronizer,
   webRoot,
   vaultName: path.basename(options.vaultPath),
+  vaultPath: options.vaultPath,
 });
 
 await new Promise<void>((resolve, reject) => {

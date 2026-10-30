@@ -10,11 +10,13 @@
     <header>
       <div>
         <p class="eyebrow">OBSIDIAN RECALL</p>
-        <h1>Collection inspector</h1>
+        <h1>Recall</h1>
       </div>
+      <nav class="top-nav" aria-label="Main navigation"><button id="practice-tab" class="active">Practice</button><button id="library-tab">Library</button><a href="/api/backup">Export database</a></nav>
       <div class="sync-state" id="sync-state">Connecting…</div>
     </header>
-    <main>
+    <section id="practice" class="practice"></section>
+    <main id="library-layout" hidden>
       <aside>
         <div class="aside-heading">
           <h2>Collections</h2>

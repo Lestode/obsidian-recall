@@ -1,8 +1,13 @@
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { stat, mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import path from "node:path";
-import type { RecallDatabase } from "@recall/database";
+import {
+  ReviewStore,
+  ReviewError,
+  type RecallDatabase,
+} from "@recall/database";
 import type { RecallSynchronizer, SyncEvent } from "./synchronizer";
 
 const STATIC_FILES: Record<string, { file: string; type: string }> = {
@@ -24,9 +29,14 @@ export function createRecallServer(options: {
   synchronizer: RecallSynchronizer;
   webRoot: string;
   vaultName: string;
+  vaultPath?: string;
 }): Server {
   const { database, synchronizer, webRoot, vaultName } = options;
   const clients = new Set<ServerResponse>();
+  const reviews = new ReviewStore(database);
+  const notifyProgress = () => {
+    for (const client of clients) client.write(`event: progress\ndata: {}\n\n`);
+  };
   let lastSyncEvent: SyncEvent | null = null;
 
   synchronizer.on("sync", (event: SyncEvent) => {
@@ -36,74 +46,243 @@ export function createRecallServer(options: {
   });
 
   return createServer(async (request, response) => {
-    const url = new URL(request.url ?? "/", "http://127.0.0.1");
-
-    if (request.method === "GET" && url.pathname === "/api/status") {
-      json(response, { ...database.status(), vaultName, lastSyncEvent });
-      return;
-    }
-    if (request.method === "GET" && url.pathname === "/api/collections") {
-      const includeArchived = url.searchParams.get("archived") === "1";
-      json(response, {
-        collections: database.listCollections(new Date().toISOString(), includeArchived),
-        revision: database.revision(),
-      });
-      return;
-    }
-    if (request.method === "GET" && url.pathname === "/api/questions") {
-      const collectionPath = url.searchParams.get("collection") ?? undefined;
-      const includeArchived = url.searchParams.get("archived") === "1";
-      const filePaths = url.searchParams.getAll("file");
-      json(response, {
-        questions: database.listQuestions({
-          collectionPath,
-          includeArchived,
-          filePaths: filePaths.length ? filePaths : undefined,
-        }),
-        revision: database.revision(),
-      });
-      return;
-    }
-    if (request.method === "POST" && url.pathname === "/api/rescan") {
-      synchronizer.requestFullReconcile();
-      json(response, { accepted: true, revision: database.revision() }, 202);
-      return;
-    }
-    if (request.method === "GET" && url.pathname.startsWith("/api/questions/")) {
-      const id = decodeURIComponent(url.pathname.slice("/api/questions/".length));
-      const question = database.getQuestion(id);
-      json(response, question ? { question } : { error: "Question not found." }, question ? 200 : 404);
-      return;
-    }
-    if (request.method === "GET" && url.pathname === "/api/events") {
-      response.writeHead(200, {
-        "content-type": "text/event-stream",
-        "cache-control": "no-cache",
-        connection: "keep-alive",
-      });
-      response.write(`event: ready\ndata: ${JSON.stringify({ revision: database.revision() })}\n\n`);
-      clients.add(response);
-      request.on("close", () => clients.delete(response));
-      return;
-    }
-
-    const staticFile = STATIC_FILES[url.pathname];
-    if (request.method === "GET" && staticFile) {
-      const filePath = path.join(webRoot, staticFile.file);
-      try {
-        const details = await stat(filePath);
-        response.writeHead(200, {
-          "content-type": staticFile.type,
-          "content-length": details.size,
-          "cache-control": "no-cache",
-        });
-        createReadStream(filePath).pipe(response);
-      } catch {
-        json(response, { error: "Inspector assets are unavailable." }, 500);
+    try {
+      const host = request.headers.host ?? "";
+      if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) {
+        json(response, { error: "Loopback Host required." }, 403);
+        return;
       }
-      return;
-    }
+      const origin = request.headers.origin;
+      if (
+        origin &&
+        origin !== `http://${host}` &&
+        origin !== "app://obsidian.md"
+      ) {
+        json(response, { error: "Foreign origin rejected." }, 403);
+        return;
+      }
+      const url = new URL(request.url ?? "/", `http://${host}`);
+      const readBody = async (): Promise<Record<string, unknown>> => {
+        if (
+          request.headers["x-recall-client"] !== "1" ||
+          !request.headers["content-type"]?.startsWith("application/json")
+        )
+          throw new ReviewError("Recall JSON request required.", 403);
+        let data = "";
+        for await (const chunk of request) {
+          data += chunk.toString();
+          if (Buffer.byteLength(data) > 16384)
+            throw new ReviewError("Request too large.", 413);
+        }
+        let body;
+        try {
+          body = JSON.parse(data);
+        } catch {
+          throw new ReviewError("Invalid JSON.", 400);
+        }
+        if (!body || typeof body !== "object" || Array.isArray(body))
+          throw new ReviewError("Expected an object.", 400);
+        return body;
+      };
+      if (url.pathname === "/api/review/projects" && request.method === "GET") {
+        json(response, {
+          projects: reviews.projects(),
+          sessions: reviews.sessions(),
+        });
+        return;
+      }
+      if (url.pathname === "/api/study" && request.method === "GET") {
+        const file = url.searchParams.get("file");
+        json(response, {
+          questions: reviews
+            .questions()
+            .filter((q) => !file || q.filePath === file),
+        });
+        return;
+      }
+      if (url.pathname === "/api/study" && request.method === "POST") {
+        const body = await readBody();
+        if (
+          typeof body.id !== "string" ||
+          typeof body.contentHash !== "string" ||
+          typeof body.studied !== "boolean"
+        )
+          throw new ReviewError("Invalid study mark.", 400);
+        const result = reviews.markStudied(
+          body.id,
+          body.contentHash,
+          body.studied,
+        );
+        notifyProgress();
+        json(response, result);
+        return;
+      }
+      if (
+        url.pathname === "/api/review/sessions" &&
+        request.method === "POST"
+      ) {
+        const body = await readBody();
+        if (
+          (body.collectionPath !== undefined &&
+            typeof body.collectionPath !== "string") ||
+          (body.folderPath !== undefined &&
+            typeof body.folderPath !== "string") ||
+          typeof body.includeUnseen !== "boolean"
+        )
+          throw new ReviewError("Invalid session scope.", 400);
+        json(
+          response,
+          reviews.start({
+            collectionPath: body.collectionPath as string | undefined,
+            folderPath: body.folderPath as string | undefined,
+            includeUnseen: body.includeUnseen,
+          }),
+          201,
+        );
+        return;
+      }
+      const sessionMatch = url.pathname.match(
+        /^\/api\/review\/sessions\/([^/]+)$/,
+      );
+      if (sessionMatch && request.method === "GET") {
+        json(response, reviews.session(sessionMatch[1]!));
+        return;
+      }
+      if (sessionMatch && request.method === "POST") {
+        const body = await readBody();
+        if (
+          !Number.isInteger(body.position) ||
+          Number(body.position) < 0 ||
+          typeof body.action !== "string"
+        )
+          throw new ReviewError("Invalid review action.", 400);
+        const result = reviews.act(
+          sessionMatch[1]!,
+          Number(body.position),
+          body.action,
+        );
+        notifyProgress();
+        json(response, result);
+        return;
+      }
+      if (url.pathname === "/api/backup" && request.method === "GET") {
+        const directory = await mkdtemp(
+          path.join(os.tmpdir(), "recall-backup-"),
+        );
+        try {
+          const destination = path.join(directory, "recall.sqlite");
+          database.connection.prepare("VACUUM INTO ?").run(destination);
+          const data = await readFile(destination);
+          response.writeHead(200, {
+            "content-type": "application/vnd.sqlite3",
+            "content-disposition":
+              'attachment; filename="recall-backup.sqlite"',
+            "cache-control": "no-store",
+          });
+          response.end(data);
+        } finally {
+          await rm(directory, { recursive: true, force: true });
+        }
+        return;
+      }
 
-    json(response, { error: "Not found." }, 404);
+      if (request.method === "GET" && url.pathname === "/api/status") {
+        json(response, {
+          ...database.status(),
+          vaultName,
+          vaultPath: options.vaultPath,
+          lastSyncEvent,
+        });
+        return;
+      }
+      if (request.method === "GET" && url.pathname === "/api/collections") {
+        const includeArchived = url.searchParams.get("archived") === "1";
+        json(response, {
+          collections: database.listCollections(
+            new Date().toISOString(),
+            includeArchived,
+          ),
+          revision: database.revision(),
+        });
+        return;
+      }
+      if (request.method === "GET" && url.pathname === "/api/questions") {
+        const collectionPath = url.searchParams.get("collection") ?? undefined;
+        const includeArchived = url.searchParams.get("archived") === "1";
+        const filePaths = url.searchParams.getAll("file");
+        json(response, {
+          questions: database
+            .listQuestions({
+              collectionPath,
+              includeArchived,
+              filePaths: filePaths.length ? filePaths : undefined,
+            })
+            .map((q) => ({
+              ...q,
+              studiedAt: reviews.progress(q.id).studiedAt,
+            })),
+          revision: database.revision(),
+        });
+        return;
+      }
+      if (request.method === "POST" && url.pathname === "/api/rescan") {
+        synchronizer.requestFullReconcile();
+        json(response, { accepted: true, revision: database.revision() }, 202);
+        return;
+      }
+      if (
+        request.method === "GET" &&
+        url.pathname.startsWith("/api/questions/")
+      ) {
+        const id = decodeURIComponent(
+          url.pathname.slice("/api/questions/".length),
+        );
+        const question = database.getQuestion(id);
+        json(
+          response,
+          question ? { question } : { error: "Question not found." },
+          question ? 200 : 404,
+        );
+        return;
+      }
+      if (request.method === "GET" && url.pathname === "/api/events") {
+        response.writeHead(200, {
+          "content-type": "text/event-stream",
+          "cache-control": "no-cache",
+          connection: "keep-alive",
+        });
+        response.write(
+          `event: ready\ndata: ${JSON.stringify({ revision: database.revision() })}\n\n`,
+        );
+        clients.add(response);
+        request.on("close", () => clients.delete(response));
+        return;
+      }
+
+      const staticFile = STATIC_FILES[url.pathname];
+      if (request.method === "GET" && staticFile) {
+        const filePath = path.join(webRoot, staticFile.file);
+        try {
+          const details = await stat(filePath);
+          response.writeHead(200, {
+            "content-type": staticFile.type,
+            "content-length": details.size,
+            "cache-control": "no-cache",
+          });
+          createReadStream(filePath).pipe(response);
+        } catch {
+          json(response, { error: "Inspector assets are unavailable." }, 500);
+        }
+        return;
+      }
+
+      json(response, { error: "Not found." }, 404);
+    } catch (error) {
+      json(
+        response,
+        { error: error instanceof Error ? error.message : "Request failed." },
+        error instanceof ReviewError ? error.status : 500,
+      );
+    }
   });
 }

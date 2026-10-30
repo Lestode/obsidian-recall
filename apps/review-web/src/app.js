@@ -1,8 +1,11 @@
+import { initPractice } from "./practice.js";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import markedKatex from "marked-katex-extension";
 
-marked.use(markedKatex({ throwOnError: false, output: "mathml", nonStandard: true }));
+marked.use(
+  markedKatex({ throwOnError: false, output: "mathml", nonStandard: true }),
+);
 
 const state = {
   collection: null,
@@ -35,7 +38,9 @@ function escapeHtml(value) {
 
 function renderMarkdown(source) {
   const rendered = marked.parse(source || "");
-  return DOMPurify.sanitize(rendered, { USE_PROFILES: { html: true, mathMl: true } });
+  return DOMPurify.sanitize(rendered, {
+    USE_PROFILES: { html: true, mathMl: true },
+  });
 }
 
 function obsidianUrl(filePath) {
@@ -53,10 +58,12 @@ function folderFromQuestion(question) {
 }
 
 function sortQuestions(questions) {
-  return questions.sort((left, right) =>
-    left.collectionPath.localeCompare(right.collectionPath)
-      || left.filePath.localeCompare(right.filePath)
-      || left.questionOrdinal - right.questionOrdinal);
+  return questions.sort(
+    (left, right) =>
+      left.collectionPath.localeCompare(right.collectionPath) ||
+      left.filePath.localeCompare(right.filePath) ||
+      left.questionOrdinal - right.questionOrdinal,
+  );
 }
 
 function renderQuestions() {
@@ -64,15 +71,21 @@ function renderQuestions() {
   const visible = state.questions.filter((question) => {
     if (!query) return true;
     return `${question.prompt}\n${question.answer}\n${question.topic}\n${question.filePath}`
-      .toLowerCase().includes(query);
+      .toLowerCase()
+      .includes(query);
   });
   if (!visible.length) {
-    elements.questions.innerHTML = '<div class="empty">No matching Recall questions.</div>';
+    elements.questions.innerHTML =
+      '<div class="empty">No matching Recall questions.</div>';
     return;
   }
   let previousFile = "";
-  elements.questions.innerHTML = visible.map((question) => {
-    const fileHeading = question.filePath === previousFile ? "" : `
+  elements.questions.innerHTML = visible
+    .map((question) => {
+      const fileHeading =
+        question.filePath === previousFile
+          ? ""
+          : `
       <div class="file-heading">
         <div>
           <span>${escapeHtml(question.collectionPath)} / ${escapeHtml(folderFromQuestion(question))}</span>
@@ -81,18 +94,46 @@ function renderQuestions() {
         </div>
         <a href="${obsidianUrl(question.filePath)}">Open in Obsidian</a>
       </div>`;
-    previousFile = question.filePath;
-    const section = question.sectionPath.length
-      ? `<p class="section-path">${question.sectionPath.map(escapeHtml).join(" / ")}</p>`
-      : "";
-    return `${fileHeading}
+      previousFile = question.filePath;
+      const section = question.sectionPath.length
+        ? `<p class="section-path">${question.sectionPath.map(escapeHtml).join(" / ")}</p>`
+        : "";
+      return `${fileHeading}
       <article class="question-card">
-        <div class="question-meta"><span class="status ${question.status}">${question.status}</span><span>#${question.questionOrdinal + 1}</span></div>
+        <div class="question-meta"><span class="study-state">${question.studiedAt ? "✓ Studied" : "Not studied"}</span><span class="status ${question.status}">${question.status}</span><span>#${question.questionOrdinal + 1}</span></div>
         ${section}
         <div class="markdown question-prompt">${renderMarkdown(question.prompt)}</div>
         <details><summary>Show answer</summary><div class="answer markdown">${question.answer ? renderMarkdown(question.answer) : "<em>No answer yet.</em>"}</div></details>
+        ${question.archivedAt ? "" : `<button class="study-toggle" data-id="${escapeHtml(question.id)}">${question.studiedAt ? "Mark not studied" : "Mark studied"}</button>`}
       </article>`;
-  }).join("");
+    })
+    .join("");
+  elements.questions.querySelectorAll(".study-toggle").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const q = state.questions.find((q) => q.id === button.dataset.id);
+      button.disabled = true;
+      try {
+        const response = await fetch("/api/study", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Recall-Client": "1",
+          },
+          body: JSON.stringify({
+            id: q.id,
+            contentHash: q.contentHash,
+            studied: !q.studiedAt,
+          }),
+        });
+        if (!response.ok) throw new Error((await response.json()).error);
+        await loadQuestions();
+      } catch (error) {
+        elements.diagnostic.hidden = false;
+        elements.diagnostic.textContent = error.message;
+        button.disabled = false;
+      }
+    });
+  });
 }
 
 function questionParameters(includeFiles = []) {
@@ -116,20 +157,30 @@ async function loadCollections() {
   const archived = state.includeArchived ? "?archived=1" : "";
   const response = await fetch(`/api/collections${archived}`);
   const payload = await response.json();
-  const allCount = payload.collections.reduce((sum, collection) => sum + collection.questionCount, 0);
-  const items = [{ collectionPath: null, questionCount: allCount, newCount: 0 }, ...payload.collections];
-  elements.collections.innerHTML = items.map((collection) => {
-    const selected = collection.collectionPath === state.collection;
-    const title = collection.collectionPath ?? "All collections";
-    return `<button class="collection ${selected ? "selected" : ""}" data-collection="${escapeHtml(collection.collectionPath ?? "")}">
+  const allCount = payload.collections.reduce(
+    (sum, collection) => sum + collection.questionCount,
+    0,
+  );
+  const items = [
+    { collectionPath: null, questionCount: allCount, newCount: 0 },
+    ...payload.collections,
+  ];
+  elements.collections.innerHTML = items
+    .map((collection) => {
+      const selected = collection.collectionPath === state.collection;
+      const title = collection.collectionPath ?? "All collections";
+      return `<button class="collection ${selected ? "selected" : ""}" data-collection="${escapeHtml(collection.collectionPath ?? "")}">
       <span><strong>${escapeHtml(title)}</strong><small>${collection.newCount ? `${collection.newCount} new` : "Indexed"}</small></span>
       <b>${collection.questionCount}</b>
     </button>`;
-  }).join("");
+    })
+    .join("");
   elements.collections.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", async () => {
       state.collection = button.dataset.collection || null;
-      elements.scopeLabel.textContent = state.collection ? "COLLECTION" : "ALL QUESTIONS";
+      elements.scopeLabel.textContent = state.collection
+        ? "COLLECTION"
+        : "ALL QUESTIONS";
       elements.scopeTitle.textContent = state.collection ?? "Library";
       await Promise.all([loadCollections(), loadQuestions()]);
     });
@@ -144,21 +195,27 @@ function renderDiagnostics(error) {
   }
   const diagnostics = error.diagnostics || [];
   if (!diagnostics.length) {
-    elements.diagnostic.textContent = error.message || "Synchronization failed.";
+    elements.diagnostic.textContent =
+      error.message || "Synchronization failed.";
     return;
   }
-  elements.diagnostic.innerHTML = `<strong>Synchronization needs attention</strong><ul>${diagnostics.map((item) => {
-    const location = `${item.filePath}${item.line ? `:${item.line}` : ""}`;
-    return `<li><b>${escapeHtml(location)}</b> — ${escapeHtml(item.message)}</li>`;
-  }).join("")}</ul>`;
+  elements.diagnostic.innerHTML = `<strong>Synchronization needs attention</strong><ul>${diagnostics
+    .map((item) => {
+      const location = `${item.filePath}${item.line ? `:${item.line}` : ""}`;
+      return `<li><b>${escapeHtml(location)}</b> — ${escapeHtml(item.message)}</li>`;
+    })
+    .join("")}</ul>`;
 }
 
 async function loadStatus() {
   const response = await fetch("/api/status");
   const status = await response.json();
   state.vaultName = status.vaultName;
-  const error = status.lastSyncEvent?.type === "error" ? status.lastSyncEvent : null;
-  elements.sync.textContent = error ? "Sync needs attention" : `${status.activeQuestions} questions indexed`;
+  const error =
+    status.lastSyncEvent?.type === "error" ? status.lastSyncEvent : null;
+  elements.sync.textContent = error
+    ? "Sync needs attention"
+    : `${status.activeQuestions} questions indexed`;
   elements.sync.classList.toggle("error", Boolean(error));
   renderDiagnostics(error);
 }
@@ -176,10 +233,14 @@ async function refreshAffectedFiles(filePaths, revision) {
   const response = await fetch(`/api/questions?${parameters}`);
   const payload = await response.json();
   const affected = new Set(filePaths);
-  const changed = payload.questions.filter((question) => state.includeArchived || !question.archivedAt);
+  const changed = payload.questions.filter(
+    (question) => state.includeArchived || !question.archivedAt,
+  );
   const changedIds = new Set(changed.map((question) => question.id));
-  const kept = state.questions.filter((question) =>
-    !affected.has(question.filePath) && !changedIds.has(question.id));
+  const kept = state.questions.filter(
+    (question) =>
+      !affected.has(question.filePath) && !changedIds.has(question.id),
+  );
   state.questions = sortQuestions([...kept, ...changed]);
   elements.revision.textContent = `revision ${revision ?? payload.revision}`;
   renderQuestions();
@@ -213,7 +274,16 @@ events.addEventListener("sync", (message) => {
     void refreshAffectedFiles(event.filePaths, event.revision);
   }
 });
-events.addEventListener("open", () => { elements.sync.textContent = "Connected"; });
-events.addEventListener("error", () => { elements.sync.textContent = "Reconnecting…"; });
+events.addEventListener("progress", () => {
+  void loadQuestions();
+});
+events.addEventListener("open", () => {
+  elements.sync.textContent = "Connected";
+});
+events.addEventListener("error", () => {
+  elements.sync.textContent = "Reconnecting…";
+});
 
 await refresh();
+
+initPractice({ renderMarkdown, escapeHtml });

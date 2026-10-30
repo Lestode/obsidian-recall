@@ -1,6 +1,6 @@
 # Obsidian Recall documentation
 
-Status: authoring layer plus the first Markdown-to-SQLite inspection slice
+Status: authoring, shared study progress, and the first FSRS review milestone
 
 This directory is the authoritative source for Obsidian Recall's product behavior. Code must conform to these documents. When behavior changes, update the relevant document before or alongside the implementation.
 
@@ -52,17 +52,19 @@ The current companion-service phase adds:
 2. Full and incremental vault reconciliation into SQLite.
 3. Immutable content versions and archival by Recall UUID.
 4. Stable review-session snapshots at the database boundary.
-5. A loopback-only API and read-only collection inspector with rendered
+5. A loopback-only API and collection library with rendered
    Markdown/math, structured validation diagnostics, archive visibility,
    source hierarchy, manual recovery scans, and targeted incremental updates.
+6. Shared database-backed study progress in the browser and Obsidian study panel.
+7. Open-ended, resumable study/recall queues with FSRS scheduling, four assessments,
+   immutable attempt history, and database export.
 
-Scheduling, grading, and writable review workflows remain later phases.
+The first review defaults and deferred features are specified in
+[`review-workflow.md`](review-workflow.md). Target-date forecasting and RWKV remain later work.
 
-The source preparation implementation and future first-study design are described in
-[`source-study-workflow.md`](source-study-workflow.md). It records the agreed
-per-question study action and the information to store before a review platform
-exists, separately from proposals and open decisions. Study tracking is not
-implemented; consuming study status for recall comes later.
+The source preparation workflow is described in
+[`source-study-workflow.md`](source-study-workflow.md). First study is implemented
+independently of recall: a study mark never manufactures a graded attempt.
 
 ## Change process
 

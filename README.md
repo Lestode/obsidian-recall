@@ -15,23 +15,24 @@ The current implementation contains:
 - Immutable question versions and archival without deleting review history.
 - Stable database snapshots for future review sessions.
 - Incremental, debounced reconciliation of changed Markdown files.
-- A read-only local web inspector with rendered Markdown and math, diagnostics,
+- A local library with rendered Markdown and math, diagnostics,
   archive visibility, source hierarchy, and targeted live updates.
 - Agent-driven PDF/website preparation into a new Recall note with automatic
   identity and parser validation.
 
-Scheduling, grading, and the interactive review workflow remain intentionally
-unimplemented until their product decisions are resolved.
+The first interactive milestone adds shared study progress, a project/folder
+practice dashboard, resumable sessions, and FSRS recall scheduling with
+Again / Hard / Good / Easy ratings. Deadline forecasting and RWKV are deferred.
 
 ## Repository layout
 
 ```text
 apps/obsidian-plugin  Obsidian authoring extension
 apps/local-service    Vault watcher, SQLite owner, and local HTTP API
-apps/review-web       Read-only collection inspector
+apps/review-web       Practice dashboard, review sessions, and library
 packages/core         Shared Markdown parser and source-context logic
 packages/database     SQLite schema and reconciliation
-packages/scheduler    Reserved boundary for the unresolved scheduling policy
+packages/scheduler    Pinned FSRS-6 scheduler
 ```
 
 ## Development
@@ -51,7 +52,22 @@ Run the local inspector against a vault with:
 npm run start -- --vault "/absolute/path/to/vault"
 ```
 
-Then open `http://127.0.0.1:45871`.
+Then open `http://127.0.0.1:45871`. Choose a project and **Start practice**.
+Unseen material is included by default. Study it and press **Studied**; on recall
+items reveal the answer, then use **1–4** to assess your attempt. **Projects**
+pauses the queue; **Resume** continues it. **Library** allows study-status corrections.
+
+In Obsidian, install the rebuilt plugin files, start the same local service,
+open a Recall note, and run **Recall: Study current note** (or use the brain
+ribbon icon). The panel refreshes shared progress every three seconds. Its
+focused study button supports Enter. Configure a nondefault service port in
+plugin settings. The panel checks that the service points to the same vault.
+
+Use **Export database** to save a consistent backup of progress and history.
+For restore, stop the service first, retain the old database, replace it with
+the backup, remove obsolete `-wal` and `-shm` sidecars, and restart against the
+same vault. See [the review workflow](docs/review-workflow.md) for policy and
+implementation boundaries. The live database must remain outside synced folders.
 
 ## Prepare questions from a source
 

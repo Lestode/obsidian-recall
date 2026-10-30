@@ -17,3 +17,9 @@
   vertical-align: 0.08em;
   user-select: none;
 }
+
+.recall-study-view { padding: 16px; }
+.recall-study-progress { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0; }
+.recall-study-progress button[aria-pressed="true"] { background: var(--interactive-accent); color: var(--text-on-accent); }
+.recall-study-prompt { font-size: 1.2em; font-weight: 600; margin: 24px 0; }
+.recall-study-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }

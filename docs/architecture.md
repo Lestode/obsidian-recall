@@ -6,9 +6,9 @@ The planned system has three layers:
 2. **SQLite review store** — retains review state and append-only history.
 3. **Local web interface** — presents review sessions and records outcomes.
 
-The first layer and the read-only indexing path through the second and third
-layers are implemented. Review scheduling and graded review events are not yet
-implemented.
+All three layers implement the first study and FSRS review milestone described
+in [review-workflow.md](review-workflow.md). The service is the sole SQLite writer;
+the Obsidian study panel and local website share its API.
 
 ## Markdown owns authored knowledge
 
@@ -22,8 +22,9 @@ Obsidian Markdown is authoritative for:
 
 ## SQLite owns review information
 
-SQLite will be authoritative for:
+SQLite is authoritative for:
 
+- per-question study status;
 - review events and attempt history;
 - current review state;
 - suggested or selected next review;
