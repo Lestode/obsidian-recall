@@ -42,7 +42,7 @@
 - How project-level readiness is estimated from the agreed recall criterion; the first implementation uses the assessment meanings and FSRS defaults in [review-workflow.md](review-workflow.md).
 - How question importance is expressed and how it affects the balance between coverage and returning reviews.
 - How FSRS predictions feed the future target-date planner. The first implementation pins FSRS-6 and its defaults in the review workflow.
-- How study status is represented in the database separately from recall history. The current `new` status means an active question has no `review_state` row; it does not reliably identify unseen material. Study tracking is now separate in `study_progress`; it is not inferred from `new`.
+- How study status is represented in the database separately from recall history. The current `new` status means an active question has no `review_state` row; it does not reliably identify unseen material. Study tracking is now separate in `study_state`; it is not inferred from `new`.
 
 This draft captures intent and the chosen model direction for validation. It does not fix model versions or scheduling policy, define assessment buttons, or change the current implementation scope.
 

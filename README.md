@@ -14,6 +14,7 @@ The current implementation contains:
 - A local service that scans Recall roots into SQLite.
 - Immutable question versions and archival without deleting review history.
 - Stable database snapshots for future review sessions.
+- Obsidian study controls with durable progress, explicit undo, and changed-content notices.
 - Incremental, debounced reconciliation of changed Markdown files.
 - A local library with rendered Markdown and math, diagnostics,
   archive visibility, source hierarchy, and targeted live updates.
@@ -57,11 +58,11 @@ Unseen material is included by default. Study it and press **Studied**; on recal
 items reveal the answer, then use **1–4** to assess your attempt. **Projects**
 pauses the queue; **Resume** continues it. **Library** allows study-status corrections.
 
-In Obsidian, install the rebuilt plugin files, start the same local service,
-open a Recall note, and run **Recall: Study current note** (or use the brain
-ribbon icon). The panel refreshes shared progress every three seconds. Its
-focused study button supports Enter. Configure a nondefault service port in
-plugin settings. The panel checks that the service points to the same vault.
+In Obsidian, install the rebuilt plugin files and start the same local service.
+Study controls appear inline in Live Preview and Reading view. Click the
+Reviewed / Not reviewed label, or press Enter with the cursor on a question.
+The website and Obsidian share the same study state. Configure a nondefault
+service port in plugin settings; the plugin verifies the connected vault.
 
 Use **Export database** to save a consistent backup of progress and history.
 For restore, stop the service first, retain the old database, replace it with
@@ -84,7 +85,25 @@ against unintended copies. Existing notes and history are never overwritten.
 The Spinning Up pilot draft is available in the skill's `examples/` directory;
 its content still needs user review before expanding to the full source.
 
-For manual plugin testing, copy `manifest.json`, `main.js`, and optionally
+## Study questions in Obsidian
+
+Run the companion service for your vault using the command above. In Obsidian
+Recall settings, set **Study companion service** to its loopback address
+(default `http://127.0.0.1:45871`). Each vault needs its own database; use
+`--database /path/outside/the/vault/recall.sqlite` when switching vaults.
+
+Open a Recall note in Live Preview or Reading view. A small amber **Not reviewed**
+or green **Reviewed** label shows the existing study status; click to toggle.
+Or place the editor cursor on a question's `**Q:**` line and press Enter. Marking
+Studied advances the cursor to the next question; marking Not studied stays on
+that question. Enter in answers retains its editing behavior. Editing a studied
+question keeps its mark and shows **Content changed**.
+
+The service must remain running. An **Unavailable** or **Syncing…** label means the
+connection or synchronization needs attention; click to retry. Progress is local SQLite data,
+not Markdown. See the [backup procedure](docs/source-study-workflow.md#study-state-ownership).
+
+For manual plugin testing, copy `manifest.json`, `main.js`, and
 `styles.css` from `apps/obsidian-plugin/` into:
 
 ```text

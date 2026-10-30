@@ -1,8 +1,6 @@
 # Synchronization, storage, and source ordering
 
-Status: indexing and session baseline, extended by the first writable study and
-FSRS milestone in [review-workflow.md](review-workflow.md). That document governs
-the initial queue ordering, ratings, scheduling defaults, and backup procedure.
+Status: Markdown-to-SQLite inspection, shared study state, and the initial local FSRS review milestone.
 
 ## Purpose
 
@@ -39,7 +37,8 @@ The responsibilities are separated as follows:
 - `core` contains the Markdown grammar, parser, shared types, and content
   hashing so the plugin and service interpret questions identically.
 - `database` contains the schema, migrations, and reconciliation operations.
-- `scheduler` wraps the pinned FSRS engine; the database review store builds queues.
+- `scheduler` contains the FSRS wrapper; the database review store implements
+  the agreed queue-selection policy.
 
 The installed Obsidian plugin directory contains build artifacts only. It is
 not an authoritative source directory.
@@ -57,6 +56,7 @@ Markdown remains authoritative for:
 
 SQLite remains authoritative for:
 
+- per-question study progress, separate from authored content and grading;
 - append-only review events;
 - current scheduling state;
 - the content version used during a review;
@@ -69,7 +69,7 @@ review history.
 
 The live database must not be placed inside a cloud-synchronized Obsidian
 vault. It belongs in the operating system's application-data directory and
-can be exported from the website as a consistent SQLite backup.
+uses the backup and export procedure in [review workflow](review-workflow.md).
 
 ## Indexed question position
 
@@ -192,16 +192,14 @@ At minimum, the planned database separates:
 | `questions` | Rebuildable current Markdown index and archive status |
 | `question_versions` | Immutable prompt-and-answer versions by content hash |
 | `review_events` | Append-only outcomes referencing the reviewed version |
+| `study_state` | Explicit studied timestamp and content hash by stable UUID |
 | `review_state` | Cached current scheduling state for each UUID |
 | `review_sessions` | Stable queue metadata and lifecycle |
 | `review_session_items` | Ordered question IDs and content hashes for a session |
 
 These stores and their initial columns are implemented in the database package.
-Review events retain before-and-after scheduling fields. `study_progress` stores
-study state separately; `fsrs_cards` stores versioned scheduling state;
-`fsrs_event_details` stores the full before/after card and engine version;
-`recall_queue_items` stores item mode, expected state version, and completion.
-The added progress tables are not cleared by Markdown reconciliation.
+Review events retain before-and-after scheduling fields, populated by the
+FSRS policy in [review workflow](review-workflow.md).
 
 ## Importance and source order
 
@@ -219,13 +217,13 @@ importance_band ASC, question_ordinal ASC
 
 A substantially more urgent question may therefore appear earlier, while
 questions in the same importance band retain the pedagogical sequence of the
-note. The first milestone defines these bands in [review-workflow.md](review-workflow.md).
+note. The initial bands are overdue, due today, and first recall.
 
-The first milestone uses alphabetical file paths within each priority band.
-This deterministic default can be refined later; filesystem enumeration is not used.
+Cross-file ordering within each band uses file path, then question ordinal.
+File order must not be inferred from unstable filesystem enumeration.
 
 The read-only inspector uses alphabetical `file_path` order solely for a
-deterministic library listing. The first review milestone also uses that order within each priority band.
+deterministic library listing. The first recall milestone also uses this ordering within each priority band.
 
 ## Stable review sessions
 
@@ -277,11 +275,13 @@ The first interface milestone is a read-only inspector showing:
 - missing or duplicated identity diagnostics.
 
 This inspector validates the complete Markdown-to-SQLite-to-interface path
-before review outcomes or scheduling policy are implemented.
+and remains available alongside the writable practice screen.
 
 The inspector uses a native collapsed disclosure for answers so prompts remain
-scannable while answers are still inspectable. This is inspector presentation,
-separate from the review screen, which uses one explicit answer reveal.
+scannable while answers are still inspectable. Expanded answers display a
+visible **A:** label beside the first line of answer content, with no extra
+blank line after the label. This is inspector presentation,
+separate from practice, where Recall hides the answer until Reveal.
 
 Incremental notifications include affected file paths. The inspector replaces
 only those files in its in-memory question list; a full question reload is
@@ -289,6 +289,13 @@ reserved for startup, explicit full rescans, collection/filter changes, and
 recovery events. Prompts and answers are rendered as sanitized Markdown with
 math support. Validation diagnostics remain visible against the last successful
 database revision.
+
+Local PDF links in answers use a read-only source route scoped to the indexed
+question. The service verifies that the requested file is an actual PDF linked
+from that answer, and the inspector preserves its physical-page fragment.
+Other filesystem paths are not exposed. This implements the source-reference
+behavior in [source preparation](source-study-workflow.md) without changing
+the Markdown or copying source files.
 
 ## Failure and recovery behaviour
 
@@ -298,8 +305,8 @@ database revision.
 - A failed transaction exposes none of its partial changes.
 - Watcher overflow or uncertainty schedules a complete reconciliation.
 - Deleting the rebuildable index does not delete review events or review state.
-- Deleting the entire database loses review history, so use the export and offline-restore
-  procedure in [review-workflow.md](review-workflow.md).
+- Deleting the entire database loses review history, so backup and restore must
+  be designed before the review store becomes the sole durable history.
 
 ## First implementation acceptance criteria
 
@@ -315,9 +322,31 @@ The first implementation phase is complete when:
 7. Automated tests cover moves between files, edit bursts, transaction failure,
    duplicated identity, archival, and stable session snapshots.
 
-## Deferred review decisions
+## Still unresolved
 
-The first review milestone resolves ratings, FSRS defaults, answer reveal, and
-initial queue order in [review-workflow.md](review-workflow.md). Advanced
-changed-content policy, importance weighting, deadline planning, Markdown edits
-from the website, and multi-device synchronization remain deferred.
+The [review workflow](review-workflow.md) records the initial rating vocabulary,
+FSRS policy, priority bands, cross-file order, and answer-reveal interaction.
+Advanced handling of changed content, deadline planning, Markdown edits from the
+website, and multi-device synchronization remain deferred.
+
+## Obsidian study extension
+
+The first-study extension permits narrow SQLite study-state writes from the
+Obsidian plugin through the loopback service. The subsequent FSRS milestone adds
+website study and grading; neither interface writes progress into Markdown. The interaction, initialization,
+edit behavior, and offline backup procedure are recorded in
+[source study](source-study-workflow.md#agreed-study-interaction).
+
+## Local FSRS milestone
+
+The authorized [review workflow](review-workflow.md) extends the inspection and
+Obsidian study slice with a writable local practice website. Both interfaces use
+the existing `study_state` records; first study never manufactures a recall event.
+The website can mark initial study and correct study status, with content and
+revision checks. Obsidian reflects those changes through its existing inline
+controls and derived note completion. Markdown remains authored content only.
+
+FSRS state and event details are stored separately from study state. Durable
+session metadata tracks study/recall mode, captured progress revisions, and
+completion alongside immutable content snapshots. Grading and queue completion
+commit together. Deadline planning and neural scheduling remain deferred.

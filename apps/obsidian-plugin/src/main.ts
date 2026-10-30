@@ -1,14 +1,4 @@
-import { RecallStudyView, STUDY_VIEW } from "./study-view";
-import {
-  Editor,
-  MarkdownView,
-  Notice,
-  Plugin,
-  PluginSettingTab,
-  Setting,
-  TFile,
-  normalizePath,
-} from "obsidian";
+import { Editor, FileSystemAdapter, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, TFile, normalizePath, requestUrl } from "obsidian";
 import {
   duplicateQuestionIds,
   orphanRecallIdentities,
@@ -20,43 +10,63 @@ import { nearestRecallRoot } from "./roots";
 import { RecallSlashSuggest, SlashAction } from "./slash-suggest";
 import { recallIdentityEditorExtension } from "./editor-marker";
 import { convertNumberedQuestions } from "./import-questions";
+import { StudyClient, loopbackServiceUrl } from "./study-client";
+import { studyEditorExtension } from "./study-editor";
+import { addReadingStudyControls } from "./study-reading";
+import { registerNoteProgressViews } from "./note-progress-views";
 import {
   importPrefixForContext,
   questionPrefixForBlankLine,
 } from "./authoring-placement";
 
 export default class ObsidianRecallPlugin extends Plugin {
-  servicePort = 45871;
   async onload(): Promise<void> {
-    const settings = await this.loadData();
-    if (
-      Number.isInteger(settings?.servicePort) &&
-      settings.servicePort > 0 &&
-      settings.servicePort <= 65535
-    )
-      this.servicePort = settings.servicePort;
-    this.addSettingTab(new RecallSettings(this));
-    this.registerView(
-      STUDY_VIEW,
-      (leaf) =>
-        new RecallStudyView(leaf, () => `http://127.0.0.1:${this.servicePort}`),
-    );
-    const openStudy = async () => {
-      let leaf = this.app.workspace.getLeavesOfType(STUDY_VIEW)[0];
-      if (!leaf) {
-        const right = this.app.workspace.getRightLeaf(false);
-        if (!right) return;
-        leaf = right;
-        await leaf.setViewState({ type: STUDY_VIEW, active: true });
-      }
-      await this.app.workspace.revealLeaf(leaf);
-    };
-    this.addCommand({
-      id: "study-current-note",
-      name: "Study current note",
-      callback: () => void openStudy(),
+    const data = await this.loadData() as { serviceUrl?: string } | null;
+    let serviceUrl = data?.serviceUrl ?? "http://127.0.0.1:45871";
+    const study = new StudyClient(async (route, body) => {
+      const adapter = this.app.vault.adapter;
+      if (!(adapter instanceof FileSystemAdapter)) throw new Error("Study tracking requires the desktop companion service.");
+      let timer: number | undefined;
+      try {
+        const response = await Promise.race([
+          requestUrl({
+            url: `${loopbackServiceUrl(serviceUrl)}${route}`,
+            method: body ? "POST" : "GET", throw: false,
+            headers: { "x-recall-client": "obsidian", "x-recall-vault": encodeURIComponent(adapter.getBasePath()) },
+            ...(body ? { contentType: "application/json", body: JSON.stringify(body) } : {}),
+          }),
+          new Promise<never>((_resolve, reject) => {
+            timer = window.setTimeout(() => reject(new Error(
+              "Could not confirm study progress. Check the companion service and retry.")), 10000);
+          }),
+        ]);
+        if (response.status !== 200) throw new Error(response.json?.error ?? "Study service unavailable. Start the companion service for this vault.");
+        return response.json;
+      } finally { if (timer !== undefined) window.clearTimeout(timer); }
     });
-    this.addRibbonIcon("brain", "Recall study", () => void openStudy());
+    this.registerInterval(window.setInterval(() => void study.refreshVisible(), 3000));
+    registerNoteProgressViews(this, study, file => file.extension === "md" && file.name !== RECALL_MARKER_FILE && this.isInsideRecallRoot(file));
+    this.registerEditorExtension(studyEditorExtension(study, file => nearestRecallRoot(file, this.markerPaths()) !== null));
+    this.registerMarkdownPostProcessor((el, context) => {
+      if (nearestRecallRoot(context.sourcePath, this.markerPaths()) !== null) addReadingStudyControls(el, context, study);
+    });
+    const plugin = this;
+    this.addSettingTab(new class extends PluginSettingTab {
+      display(): void {
+        this.containerEl.empty();
+        new Setting(this.containerEl).setName("Study companion service")
+          .setDesc("Start the local service for this vault, then use its loopback address. Progress is stored separately from Markdown.")
+          .addText(text => text.setValue(serviceUrl).onChange(async value => {
+            serviceUrl = value;
+            try {
+              const checked = loopbackServiceUrl(value);
+              await plugin.saveData({ ...data, serviceUrl: checked });
+              serviceUrl = checked;
+              await study.refreshVisible();
+            } catch { /* Retry displays validation errors for an incomplete address. */ }
+          }));
+      }
+    }(this.app, this));
     this.registerEditorExtension(recallIdentityEditorExtension);
     this.app.workspace.updateOptions();
 
@@ -159,27 +169,19 @@ export default class ObsidianRecallPlugin extends Plugin {
         ch: "**Q:** ".length,
       });
     } else {
-      editor.replaceRange(`\n\n${template}`, {
-        line: cursor.line,
-        ch: line.length,
-      });
+      editor.replaceRange(`\n\n${template}`, { line: cursor.line, ch: line.length });
       editor.setCursor({ line: cursor.line + 2, ch: "**Q:** ".length });
     }
   }
 
   private async enableRecallFolder(file: TFile): Promise<void> {
     const folder = file.parent?.path ?? "";
-    const markerPath = normalizePath(
-      folder ? `${folder}/${RECALL_MARKER_FILE}` : RECALL_MARKER_FILE,
-    );
+    const markerPath = normalizePath(folder ? `${folder}/${RECALL_MARKER_FILE}` : RECALL_MARKER_FILE);
     if (this.app.vault.getAbstractFileByPath(markerPath)) {
       new Notice(`${markerPath} already exists.`);
       return;
     }
-    await this.app.vault.create(
-      markerPath,
-      `# ${file.parent?.name ?? "Recall"}\n`,
-    );
+    await this.app.vault.create(markerPath, `# ${file.parent?.name ?? "Recall"}\n`);
     new Notice(`Enabled active recall for ${folder || "the vault root"}.`);
   }
 
@@ -187,10 +189,7 @@ export default class ObsidianRecallPlugin extends Plugin {
     const questions = parseRecallQuestions(view.editor.getValue());
     const missingIds = questions.filter((question) => !question.id).length;
     const duplicates = duplicateQuestionIds(questions).size;
-    const orphanIdentities = orphanRecallIdentities(
-      view.editor.getValue(),
-      questions,
-    ).length;
+    const orphanIdentities = orphanRecallIdentities(view.editor.getValue(), questions).length;
     const details = [
       `${questions.length} question${questions.length === 1 ? "" : "s"}`,
       `${missingIds} without identity`,
@@ -208,37 +207,14 @@ export default class ObsidianRecallPlugin extends Plugin {
     }
 
     const selectionStart = editor.getCursor("from");
-    const textBeforeSelection = editor
-      .getLine(selectionStart.line)
-      .slice(0, selectionStart.ch);
-    const previousLine =
-      selectionStart.line > 0 ? editor.getLine(selectionStart.line - 1) : "";
+    const textBeforeSelection = editor.getLine(selectionStart.line).slice(0, selectionStart.ch);
+    const previousLine = selectionStart.line > 0
+      ? editor.getLine(selectionStart.line - 1)
+      : "";
     const prefix = importPrefixForContext(textBeforeSelection, previousLine);
     editor.replaceSelection(`${prefix}${result.markdown}`);
     new Notice(
       `Converted ${result.questionCount} question${result.questionCount === 1 ? "" : "s"}.`,
     );
-  }
-}
-
-class RecallSettings extends PluginSettingTab {
-  constructor(private readonly recall: ObsidianRecallPlugin) {
-    super(recall.app, recall);
-  }
-  display(): void {
-    this.containerEl.empty();
-    new Setting(this.containerEl)
-      .setName("Local service port")
-      .setDesc("The port used by the Recall companion service. Default: 45871.")
-      .addText((input) =>
-        input
-          .setValue(String(this.recall.servicePort))
-          .onChange(async (value) => {
-            const port = Number(value);
-            if (!Number.isInteger(port) || port < 1 || port > 65535) return;
-            this.recall.servicePort = port;
-            await this.recall.saveData({ servicePort: port });
-          }),
-      );
   }
 }

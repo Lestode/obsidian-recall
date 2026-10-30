@@ -1,6 +1,6 @@
 # Obsidian Recall documentation
 
-Status: authoring, shared study progress, and the first FSRS review milestone
+Status: authoring, source preparation, shared first study, and local FSRS recall
 
 This directory is the authoritative source for Obsidian Recall's product behavior. Code must conform to these documents. When behavior changes, update the relevant document before or alongside the implementation.
 
@@ -42,7 +42,8 @@ The Obsidian authoring layer currently supports:
 7. Import numbered question lists with optional `A:` answers.
 
 An additional agent-driven source preparation workflow reads PDFs or websites
-and creates a new, parser-validated Recall note with automatic identity. See
+and creates new, parser-validated Recall notes with automatic identity, using
+one note per chapter for books. See
 [`source-study-workflow.md`](source-study-workflow.md) and the
 [source preparation skill](../automation/source-preparation/SKILL.md).
 
@@ -52,19 +53,25 @@ The current companion-service phase adds:
 2. Full and incremental vault reconciliation into SQLite.
 3. Immutable content versions and archival by Recall UUID.
 4. Stable review-session snapshots at the database boundary.
-5. A loopback-only API and collection library with rendered
+5. A loopback-only API and read-only collection inspector with rendered
    Markdown/math, structured validation diagnostics, archive visibility,
    source hierarchy, manual recovery scans, and targeted incremental updates.
-6. Shared database-backed study progress in the browser and Obsidian study panel.
-7. Open-ended, resumable study/recall queues with FSRS scheduling, four assessments,
-   immutable attempt history, and database export.
 
-The first review defaults and deferred features are specified in
-[`review-workflow.md`](review-workflow.md). Target-date forecasting and RWKV remain later work.
+The first writable milestone adds a project/folder practice dashboard, shared
+study status, resumable recall sessions, and FSRS scheduling. See
+[`review-workflow.md`](review-workflow.md) for the agreed policy and deferred work.
 
-The source preparation workflow is described in
-[`source-study-workflow.md`](source-study-workflow.md). First study is implemented
-independently of recall: a study mark never manufactures a graded attempt.
+Obsidian now provides per-question study controls in Live Preview and Reading
+view. Every existing or new question starts Not studied. An explicit Enter/click
+toggles only that question through a small coloured Reviewed / Not reviewed label. Enter with the text
+cursor on a question marks it studied and advances within the note; Enter on a
+studied question returns it to Not studied. Edits retain the mark with
+**Content changed**.
+File-list and open-title labels derive note completion from those question
+marks; see the [completion rules](source-study-workflow.md#chapter-and-note-completion).
+The local service stores progress separately from Markdown. See
+[`source-study-workflow.md`](source-study-workflow.md) for the interaction,
+connection requirements, and backup procedure. The website consumes this same status for study and FSRS recall sessions.
 
 ## Change process
 

@@ -65,7 +65,10 @@ test("recall stores FSRS state and immutable events, exact retries are idempoten
     const s = store.start(scope, now);
     assert.equal(s.current?.mode, "recall");
     assert.ok(s.current?.preview?.Good);
-    assert.equal(store.act(s.id, 0, "Good", now).completedAt, now.toISOString());
+    assert.equal(
+      store.act(s.id, 0, "Good", now).completedAt,
+      now.toISOString(),
+    );
     const q = db.getQuestion("q1")!;
     assert.equal(q.lastReviewedAt, now.toISOString());
     assert.equal(q.lastReviewedHash, "v1");
@@ -196,6 +199,40 @@ test("queue creation failure rolls back snapshot and respects folder boundaries"
       db.connection.prepare("SELECT count(*) AS n FROM review_sessions").get()
         ?.n,
       count,
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("Obsidian and website share study state and reject stale study queues", () => {
+  const { db, store } = setup();
+  try {
+    const queued = store.start(scope, now);
+    const state = db.setStudied(
+      {
+        questionId: "q1",
+        filePath: record().filePath,
+        contentHash: "v1",
+        studied: true,
+        expectedRevision: null,
+      },
+      now.toISOString(),
+    );
+    assert.equal(store.progress("q1").studyRevision, state.revision);
+    assert.equal(
+      store.start({ includeUnseen: false }, now).current?.mode,
+      "recall",
+    );
+    assert.throws(() => store.act(queued.id, 0, "studied", now));
+    assert.equal(store.session(queued.id).done, 0);
+    store.markStudied("q1", "v1", false, now, state.revision);
+    assert.equal(db.getStudyState("q1")?.studiedAt, null);
+    assert.equal(
+      db.connection
+        .prepare("SELECT name FROM sqlite_master WHERE name='study_progress'")
+        .get(),
+      undefined,
     );
   } finally {
     db.close();

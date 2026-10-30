@@ -23,6 +23,7 @@ export interface Scope {
 }
 export interface Progress {
   studiedAt: string | null;
+  studyRevision: string | null;
   card: string | null;
   version: number;
 }
@@ -30,17 +31,13 @@ export interface Progress {
 export class ReviewStore {
   constructor(readonly db: RecallDatabase) {
     db.connection.exec(`
-      CREATE TABLE IF NOT EXISTS study_progress (
-        question_id TEXT PRIMARY KEY, studied_at TEXT, content_hash TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
       CREATE TABLE IF NOT EXISTS fsrs_cards (
         question_id TEXT PRIMARY KEY, card_json TEXT NOT NULL, engine TEXT NOT NULL,
         version INTEGER NOT NULL
       );
       CREATE TABLE IF NOT EXISTS recall_queue_items (
         session_id TEXT NOT NULL, position INTEGER NOT NULL, mode TEXT NOT NULL,
-        expected_version INTEGER NOT NULL, action TEXT, completed_at TEXT,
+        expected_version INTEGER NOT NULL, expected_study_revision TEXT, action TEXT, completed_at TEXT,
         PRIMARY KEY(session_id, position),
         FOREIGN KEY(session_id) REFERENCES review_sessions(id)
       );
@@ -51,27 +48,18 @@ export class ReviewStore {
     `);
   }
   private transaction<T>(fn: () => T): T {
-    this.db.connection.exec("BEGIN IMMEDIATE");
-    try {
-      const result = fn();
-      this.db.connection.exec("COMMIT");
-      return result;
-    } catch (error) {
-      this.db.connection.exec("ROLLBACK");
-      throw error;
-    }
+    return this.db.transaction(fn);
   }
   progress(id: string): Progress {
-    const study = this.db.connection
-      .prepare("SELECT studied_at FROM study_progress WHERE question_id = ?")
-      .get(id);
+    const study = this.db.getStudyState(id);
     const card = this.db.connection
       .prepare(
         "SELECT card_json, version FROM fsrs_cards WHERE question_id = ?",
       )
       .get(id);
     return {
-      studiedAt: study?.studied_at ? String(study.studied_at) : null,
+      studiedAt: study?.studiedAt ?? null,
+      studyRevision: study?.revision ?? null,
       card: card ? String(card.card_json) : null,
       version: card ? Number(card.version) : 0,
     };
@@ -81,7 +69,13 @@ export class ReviewStore {
       .listQuestions()
       .map((q) => ({ ...q, ...this.progress(q.id) }));
   }
-  markStudied(id: string, hash: string, studied: boolean, now = new Date()) {
+  markStudied(
+    id: string,
+    hash: string,
+    studied: boolean,
+    now = new Date(),
+    expectedRevision = this.progress(id).studyRevision,
+  ) {
     const q = this.db.getQuestion(id);
     if (!q || q.archivedAt)
       throw new ReviewError("Question is unavailable.", 404);
@@ -89,18 +83,16 @@ export class ReviewStore {
       throw new ReviewError(
         "This question changed. Refresh before marking it studied.",
       );
-    this.db.connection
-      .prepare(
-        `INSERT INTO study_progress(question_id, studied_at, content_hash, updated_at)
-      VALUES (?, ?, ?, ?) ON CONFLICT(question_id) DO UPDATE SET
-      studied_at=excluded.studied_at, content_hash=excluded.content_hash, updated_at=excluded.updated_at`,
-      )
-      .run(
-        id,
-        studied ? (this.progress(id).studiedAt ?? now.toISOString()) : null,
-        hash,
-        now.toISOString(),
-      );
+    this.db.setStudied(
+      {
+        questionId: id,
+        filePath: q.filePath,
+        contentHash: hash,
+        studied,
+        expectedRevision,
+      },
+      now.toISOString(),
+    );
     return this.progress(id);
   }
   private eligible(q: QuestionListItem, now: Date) {
@@ -186,9 +178,15 @@ export class ReviewStore {
       (id) => {
         const insert = this.db.connection
           .prepare(`INSERT INTO recall_queue_items
-        (session_id, position, mode, expected_version) VALUES (?, ?, ?, ?)`);
+        (session_id, position, mode, expected_version, expected_study_revision) VALUES (?, ?, ?, ?, ?)`);
         queue.forEach((item, i) =>
-          insert.run(id, i, item.mode, this.progress(item.q.id).version),
+          insert.run(
+            id,
+            i,
+            item.mode,
+            this.progress(item.q.id).version,
+            this.progress(item.q.id).studyRevision,
+          ),
         );
       },
     );
@@ -271,7 +269,18 @@ export class ReviewStore {
               "Study must be confirmed before recall.",
               400,
             );
-          this.markStudied(item.questionId, item.contentHash, true, now);
+          const captured = this.db.connection
+            .prepare(
+              "SELECT expected_study_revision FROM recall_queue_items WHERE session_id=? AND position=?",
+            )
+            .get(id, position)!;
+          this.markStudied(
+            item.questionId,
+            item.contentHash,
+            true,
+            now,
+            captured.expected_study_revision as string | null,
+          );
         } else {
           if (!(RATINGS as readonly string[]).includes(action))
             throw new ReviewError("Unknown assessment.", 400);

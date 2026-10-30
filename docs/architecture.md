@@ -6,9 +6,9 @@ The planned system has three layers:
 2. **SQLite review store** — retains review state and append-only history.
 3. **Local web interface** — presents review sessions and records outcomes.
 
-All three layers implement the first study and FSRS review milestone described
-in [review-workflow.md](review-workflow.md). The service is the sole SQLite writer;
-the Obsidian study panel and local website share its API.
+The first layer and the read-only indexing path through the second and third
+layers, plus per-question study controls and SQLite persistence, are
+implemented, together with local FSRS scheduling and graded review events.
 
 ## Markdown owns authored knowledge
 
@@ -24,7 +24,7 @@ Obsidian Markdown is authoritative for:
 
 SQLite is authoritative for:
 
-- per-question study status;
+- per-question study progress and the version marked studied;
 - review events and attempt history;
 - current review state;
 - suggested or selected next review;
@@ -43,3 +43,17 @@ boundaries are specified in
 Changing a question or answer must not automatically reset its review history. The system should detect when current content differs from the version most recently reviewed.
 
 The eventual interaction for keeping, accelerating, resetting, or splitting changed questions remains unresolved and belongs to the review workflow.
+
+## Local FSRS milestone
+
+The authorized [review workflow](review-workflow.md) extends the inspection and
+Obsidian study slice with a writable local practice website. Both interfaces use
+the existing `study_state` records; first study never manufactures a recall event.
+The website can mark initial study and correct study status, with content and
+revision checks. Obsidian reflects those changes through its existing inline
+controls and derived note completion. Markdown remains authored content only.
+
+FSRS state and event details are stored separately from study state. Durable
+session metadata tracks study/recall mode, captured progress revisions, and
+completion alongside immutable content snapshots. Grading and queue completion
+commit together. Deadline planning and neural scheduling remain deferred.

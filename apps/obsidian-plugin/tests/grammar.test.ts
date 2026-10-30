@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   duplicateQuestionIds,
+  formatRecallAnswer,
   orphanRecallIdentities,
   parseRecallQuestions,
   questionTemplate,
 } from "../src/grammar";
 import { convertNumberedQuestions } from "../src/import-questions";
+import { hashQuestionContent } from "@recall/core";
 
 const ID_ONE = "123e4567-e89b-42d3-a456-426614174000";
 const ID_TWO = "123e4567-e89b-42d3-a456-426614174001";
@@ -14,11 +16,12 @@ const ID_TWO = "123e4567-e89b-42d3-a456-426614174001";
 test("places identity directly beneath a newly inserted question", () => {
   assert.equal(
     questionTemplate(ID_ONE),
-    `**Q:** \n<!-- recall:id=${ID_ONE} -->\n\n`,
+    `**Q:** \n<!-- recall:id=${ID_ONE} -->\n\n**A:** \n\n`,
   );
   const [question] = parseRecallQuestions(questionTemplate(ID_ONE));
   assert.equal(question?.id, ID_ONE);
   assert.equal(question?.prompt, "");
+  assert.equal(question?.answer, "");
   assert.deepEqual(orphanRecallIdentities(questionTemplate(ID_ONE)), []);
 });
 
@@ -32,7 +35,7 @@ test("converts a numbered selection into identified recall questions", () => {
   assert.equal(result?.questionCount, 2);
   assert.equal(
     result?.markdown,
-    `## Core concepts\n\n**Q:** What is OLS?\n<!-- recall:id=${ID_ONE} -->\n\n**Q:** Why use regularization?\n<!-- recall:id=${ID_TWO} -->\n\n`,
+    `## Core concepts\n\n**Q:** What is OLS?\n<!-- recall:id=${ID_ONE} -->\n\n**A:** \n\n**Q:** Why use regularization?\n<!-- recall:id=${ID_TWO} -->\n\n**A:** \n\n`,
   );
 });
 
@@ -44,7 +47,7 @@ test("normalizes imported headings, multiline math, and spacing artifacts", () =
 
   assert.equal(
     result?.markdown,
-    `## Statistical decision theory\n\n**Q:** Under squared-error loss, which function $f(x)$ minimizes $\\mathbb E[(Y-f(X))^2]?$\n<!-- recall:id=${ID_ONE} -->\n\n`,
+    `## Statistical decision theory\n\n**Q:** Under squared-error loss, which function $f(x)$ minimizes $\\mathbb E[(Y-f(X))^2]?$\n<!-- recall:id=${ID_ONE} -->\n\n**A:** \n\n`,
   );
 });
 
@@ -57,7 +60,7 @@ test("imports A: answers beneath their protected question identities", () => {
 
   assert.equal(
     result?.markdown,
-    `**Q:** What is the OLS estimator?\n<!-- recall:id=${ID_ONE} -->\n\n$\\hat\\beta=(X^\\top X)^{-1}X^\\top y$\n\n**Q:** Why regularize?\n<!-- recall:id=${ID_TWO} -->\n\nTo reduce variance when data are limited.\n\n`,
+    `**Q:** What is the OLS estimator?\n<!-- recall:id=${ID_ONE} -->\n\n**A:** $\\hat\\beta=(X^\\top X)^{-1}X^\\top y$\n\n**Q:** Why regularize?\n<!-- recall:id=${ID_TWO} -->\n\n**A:** To reduce variance when data are limited.\n\n`,
   );
 });
 
@@ -71,6 +74,48 @@ test("parses a question, identity, and answer", () => {
   assert.equal(question?.id, ID_ONE);
   assert.equal(question?.prompt, "Why can predictions remain stable?");
   assert.equal(question?.answer, "Because fitted values may be well identified.");
+});
+
+test("leading answer labels preserve answer content, hashes, and literal labels inside answers", async () => {
+  const body = "An explanation.\n\n- A list item.\n\n```md\n**A:** A literal code example.\n```\n\n**A:** A label inside the answer.";
+  const hashes = [];
+  for (const prefix of ["", "**A:** ", "**A:**\n\n"]) {
+    const markdown = `**Q:** Explain it.\n<!-- recall:id=${ID_ONE} -->\n\n${prefix}${body}\n`;
+    const [question] = parseRecallQuestions(markdown);
+    assert.equal(question?.id, ID_ONE);
+    assert.equal(question?.answer, body);
+    assert.equal(question?.answerStartLine, prefix === "**A:**\n\n" ? 5 : 3);
+    hashes.push(await hashQuestionContent(question!.prompt, question!.answer));
+  }
+  assert.equal(new Set(hashes).size, 1);
+});
+
+test("a standalone answer label preserves a leading code fence, list, or equation", () => {
+  for (const body of ["```md\n**A:** Example only.\n```", "- First\n- Second", "$$\nc = 2\n$$"]) {
+    const markdown = `**Q:** Explain it.\n<!-- recall:id=${ID_ONE} -->\n\n**A:**\n\n${body}\n`;
+    assert.equal(parseRecallQuestions(markdown)[0]?.answer, body);
+  }
+});
+
+test("inline prose labels preserve content while block-first answers still render as Markdown blocks", async () => {
+  const { marked } = await import("marked");
+  const prose = "The answer starts here.\n\nA later paragraph.\n\n- A later list.";
+  assert.equal(formatRecallAnswer(prose), `**A:** ${prose}`);
+  for (const [body, type] of [
+    ["```python\nprint(1)\n```", "code"],
+    ["- First\n- Second", "list"],
+    ["1. First\n2. Second", "list"],
+    ["> A quotation.", "blockquote"],
+    ["### Details", "heading"],
+    ["| Name | Value |\n| --- | --- |\n| c | 2 |", "table"],
+  ]) {
+    const formatted = formatRecallAnswer(body!);
+    const tokens = marked.lexer(formatted).filter(token => token.type !== "space");
+    assert.equal(tokens[0]?.type, "paragraph");
+    assert.equal(tokens[1]?.type, type);
+    assert.equal(parseRecallQuestions(`**Q:** Explain it.\n<!-- recall:id=${ID_ONE} -->\n\n${formatted}\n`)[0]?.answer, body);
+  }
+  assert.equal(formatRecallAnswer("$$\nc=2\n$$"), "**A:**\n\n$$\nc=2\n$$");
 });
 
 test("ends an answer at the next question", () => {

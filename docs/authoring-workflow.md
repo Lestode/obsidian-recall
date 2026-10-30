@@ -53,8 +53,10 @@ The slash command is a convenience. The resulting Markdown remains understandabl
 ### 5. Develop the answer freely
 
 The user writes the answer as ordinary Markdown immediately below the generated
-identity marker. In the editor the marker is represented by a locked `Recall`
-indicator, so the answer is simply written on the next visible line. The answer
+identity marker, in the area beginning with the visible **A:** label inserted
+by the template. Prose starts immediately after **A:** on the same line;
+block-first answers keep their normal Markdown structure. In the editor the identity is represented by a locked `Recall`
+indicator. The answer
 continues until the next recall question, level-one heading, level-two heading,
 or end of file. Questions and answers are expected to evolve as understanding
 improves.
@@ -64,8 +66,9 @@ improves.
 The user may paste and select a numbered Markdown list, then run **Convert
 numbered selection to recall questions**. The extension converts each numbered
 item to the canonical question form and generates its identity. An answer that
-begins with `A:` or `**A:**` is placed below the identity; without either marker,
-the answer is left blank. Continuation lines after an answer marker remain part
+begins with `A:` or `**A:**` is placed below the identity with the canonical
+`**A:** Answer text` on one line; without either input marker, the labelled answer area is left
+blank. Continuation lines after an answer marker remain part
 of that answer. Markdown headings in the selection are normalized to level two so
 they remain answer boundaries. A plain title before the first numbered item is
 also treated as a level-two heading. The conversion is one editor operation and
@@ -103,3 +106,23 @@ Equivalent command-palette actions and keyboard shortcuts may coexist with the s
 
 Nested `_recall.md` roots are allowed. A file belongs to its nearest ancestor
 root, so a nested collection takes precedence over a broader collection.
+
+## First study in Obsidian
+
+Live Preview and Reading view provide a small clickable status label beside each
+identified Recall question: amber **Not reviewed** for Not studied, green
+**Reviewed** for Studied. These labels name the existing study state, not a
+graded recall result.
+Clicking toggles in place. With the editor cursor on the `**Q:**` line, plain
+Enter toggles the status; marking Studied advances the cursor to the next
+question, while marking Not studied stays on the question. All existing and
+generated questions begin unstudied. Editing retains a studied mark and displays
+**Content changed** when the prompt or answer changes. Enter in answers and
+other note text retains its editing behavior.
+
+The local companion service must be running for this vault; its address is set
+in the plugin's **Study companion service** setting. No progress syntax is
+written into Markdown. Note progress also appears beside its name in the file
+list and beside its open title: a studied/total count, or **✓ Completed** when
+all its questions are studied. See [source study](source-study-workflow.md) for
+completion rules, persistence, offline behavior, and backup.

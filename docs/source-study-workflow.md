@@ -1,14 +1,15 @@
 # Source preparation and first study
 
-Status: source preparation and first study are implemented. The Obsidian study
-panel and local website both support explicit per-question study marks, stored
-in SQLite and reflected in both interfaces. See [review-workflow.md](review-workflow.md)
-for the governing implementation decisions and FSRS review behavior.
+Status: first implementation of agent-driven source preparation, with an
+initial pilot awaiting content review. Per-question first-study controls are
+implemented in Obsidian under the decisions below. The local website now delivers FSRS recall under [review workflow](review-workflow.md).
 
-The user can prepare questions ahead of learning, then study in either interface.
-Study status distinguishes unstudied material from material ready for recall.
-The website includes initial-study items by default, with an option to disable
-them. These items are not graded recall attempts.
+The workflow should let someone provide a PDF or a learning website, receive
+structured Recall notes, study them at their own pace, and store which questions
+they have covered. The immediate goal is to preserve the information a future
+review platform will need to distinguish questions ready for recall from
+material the user has not studied yet. There is currently no interactive review
+platform; storing study progress must be useful before one exists.
 
 ## Workflow overview
 
@@ -19,10 +20,11 @@ them. These items are not graded recall attempts.
    automatically.
 4. Study the material and mark each covered question as studied.
 5. Persist that status for each question so it remains available on return and
-   is used by the review platform.
+   can later be used by a review platform.
 
-Question preparation can happen ahead of learning. Recall sessions use the stored study status to keep
-initial-study items distinct from graded recall.
+Question preparation can happen ahead of learning. Practising questions and
+selecting review sessions now use the shared study state; the platform uses the
+stored study status to exclude unstudied questions.
 
 ## Preparing questions from a source
 
@@ -39,6 +41,8 @@ The output should follow the source's learning sequence. Filenames supply
 topics, folders supply broader context, and section titles group related
 questions. Level-one and level-two headings separate question groups;
 level-three and deeper headings remain inside answers, as the grammar specifies.
+Each generated prose answer starts immediately after **A:** on the same line.
+Block-first answers retain the line break required by their Markdown syntax.
 
 Questions should cover meaningful concepts, explanations, and applications in
 manageable pieces. Suggested answers should be grounded in the source and
@@ -47,21 +51,47 @@ web section or identify the PDF and page, so the user can return to the original
 explanation. Unclear extraction or missing source material needs to be surfaced
 rather than filled with invented answers.
 
-For the first milestone, each preparation run produces one Markdown note for
-the agreed source scope, with sections and questions in source order. Splitting
-the output across multiple topic files is deferred. The user selects a parent
-folder within an existing Recall collection. Generation creates a folder for
-the source beneath that parent and places the new note inside it. Existing
-notes must not be overwritten or modified.
+Local PDF references remain ordinary `file:` links with physical page numbers
+in Markdown. In the browser inspector, these links open the original PDF
+through the local service while retaining the page fragment. The service only
+reads local PDF files linked from that indexed question's answer; it does not
+accept arbitrary filesystem paths or copy the source into the collection.
+Missing or unreadable sources return an unavailable-source response. HTTP(S)
+source links continue to open directly.
+
+A preparation run produces one or more Markdown notes for the agreed source
+scope, with files, sections, and questions in source order. Books default to
+one note per chapter and one per substantive appendix. Keep major sections
+inside their chapter note so completion beside that filename represents the
+whole chapter. Splitting chapters into section files is deferred until combined
+chapter/folder progress is supported. Short single-page sources may still
+produce one note. Use numbered filenames to preserve the reading sequence and
+retain useful section headings within each note.
+
+The user selects a parent folder within an existing Recall collection.
+Generation creates one folder for the source beneath that parent and places
+all the new notes inside it. Check coverage across the complete agreed scope,
+including the boundaries between files. Validate the complete publication batch
+before writing; a failed publication must be reported as incomplete.
+Existing notes must not be overwritten or modified. Source-history and copy
+confirmation apply to the complete source, not separately to every chapter.
+
+When the user requests early access, publish a checked batch of whole chapters
+and identify the release as partial. Continue that same preparation by adding
+only absent note paths to its existing source folder. Validate each entire batch
+before writing, refuse occupied paths or symlink traversal, and preserve every
+published question and identity. This explicit continuation is not another
+independent copy or automatic recognition of a source version. Check coverage
+over the complete set before reporting the book finished.
 
 If the source already has generated notes, generation must stop and ask the
 user before creating another copy. It must not silently duplicate the output.
 For this first version, ask the user whether the source already has generated
 notes, including older versions, unless that information is already supplied.
-The writer requires either a declaration of no prior output or confirmation
+For a new preparation, the writer requires either a declaration of no prior output or confirmation
 of a new independent copy. This is a user check, not automatic recognition of
 URLs, renamed PDFs, or updated source versions. An existing destination folder
-also blocks writing without copy confirmation. Confirmed copies use a new
+also blocks a new preparation without copy confirmation. Confirmed copies use a new
 numbered folder when necessary; existing folders remain unchanged.
 
 Identity must be generated and checked automatically; users should not write
@@ -109,10 +139,12 @@ coverage.
 
 ## Study information to store
 
-New questions in this workflow begin as **Not studied**. Importing a question,
-opening a note, or revealing an answer does not mark it studied.
+All questions, including existing collections and questions with prior review
+history, begin as **Not studied** unless explicitly marked through the study
+control. There is no inference or backfill from creation, importing, reading,
+answer reveal, or reviews.
 
-| Study status | Meaning | Use by the review platform |
+| Study status | Meaning | Intended use by a future review platform |
 |---|---|---|
 | Not studied | The user has not confirmed covering this question's material | Exclude from recall |
 | Studied | The user has explicitly confirmed covering this question's material | May be selected for recall |
@@ -131,29 +163,73 @@ status must remain distinct from review history.
 Recording study status must not depend on creating a review session, recording
 a graded attempt, or having a scheduler. It supplies a prerequisite
 for recall selection. It does not decide when a question is due, how an
-attempt is graded, or which eligible question appears next. The first implementation defaults
-are defined in the
+attempt is graded, or which eligible question appears next. Those policies
+are defined for the first milestone in the
 [review workflow](review-workflow.md).
 
 ## Agreed study interaction
 
-The study interaction focuses one question at a time while retaining its topic
-and section context. It must be available independently of graded recall; it is available in the Obsidian study panel and on the local website. After covering that
-question's material, the user presses
-**Enter** or clicks the corresponding study control. The interaction:
+Each identified question has one small clickable text label in Obsidian Live
+Preview and Reading view: **Not reviewed** in amber or **Reviewed** in green.
+These are the user-facing names for the existing Not studied / Studied states;
+they record covering the material, not a graded recall attempt. Changing the
+wording does not migrate, reset, or infer progress. Text carries the status as
+well as colour. There is no circular icon or separate Mark, Next, or Undo button.
+Clicking the label toggles only that question in place. Tooltips and accessible
+labels name the status and action. An edited studied question also displays
+**Content changed**, retaining its stored mark.
 
-1. Marks only the focused question as studied and persists that status.
-2. Shows a persistent **✓ Studied** marker beside that question.
-3. Moves focus to the next question.
+In the editor, pressing plain **Enter** with a single empty selection anywhere
+on the question's `**Q:**` line toggles that question. Marking it studied advances
+the text cursor to the next question in this note, preserving the one-keypress
+study pass; returning it to Not studied leaves the cursor on the question.
+The final question retains the cursor. Clicking a label, or activating that
+focused label with Enter/Space, toggles in place so it can be clicked again.
 
-This makes a study pass possible with one deliberate keypress per question.
-There is no requirement to select a range or mark an entire section. Marking
-one question never silently activates earlier questions.
+Ordinary Enter in answers and other note text, modified Enter, selections,
+multiple cursors, and IME composition keep their editing behavior. Missing or
+duplicated identities are never toggled. Holding Enter cannot mark a series of
+questions through key repeat. Navigation uses normal cursor movement and
+scrolling; it never changes intervening questions or crosses files. If the user
+moves the cursor or edits the document during a save, completion must not move
+it back or steal focus.
 
-The marker remains visible on return so the user can distinguish covered and
-upcoming material. Enter applies to the study control; ordinary note editing
-keeps its own keyboard behavior. The Obsidian panel provides question navigation and a correction action;
-the website provides Skip and a library study toggle.
+The local companion service must be running for this vault. Plugin settings
+provide its loopback address. An unavailable or unsynchronized state uses an
+neutral **Unavailable**, **Loading…**, or **Syncing…** label and a descriptive
+tooltip, never a Not reviewed label for unknown state. Clicking retries
+synchronization. Saving must succeed before the label changes
+or the cursor advances. A content/version conflict requires synchronization and
+retry; it never marks a different version. Reviewed/recall outcomes remain a
+separate future concept; these labels toggle the existing study state only.
+
+## Chapter and note completion
+
+In Obsidian's file list and beside an open note's title, show a small progress
+label for notes containing Recall questions. This is derived from the same
+per-question study states used by the Reviewed / Not reviewed controls:
+
+- While any question is Not studied, show the studied count and total, such as
+  **12/20**. At zero, show **0/20**.
+- A note with at least one question is **✓ Completed** only when every current
+  question is Studied. Include the count in its tooltip and accessible label.
+- Adding an unstudied question or marking one Not studied makes the note
+  incomplete again. Removing or moving questions recalculates each affected
+  note from its current questions; archived questions are excluded.
+- Notes with no questions have no completion label. Invalid or unsynchronized
+  notes must never appear completed from retained index data. Show **Syncing…**
+  while their current content cannot be confirmed, **Loading…** before the first
+  read, and **Unavailable** when the service cannot be reached.
+- Edits retain study marks and therefore completion, consistent with the
+  existing question behavior. Show **Content changed** beside the aggregate
+  progress when any studied question differs from its studied version.
+
+The labels update after confirmed study saves and refresh when notes change or
+the service reconnects. They are informational: they do not mark questions,
+write Markdown/frontmatter, rename files, or store a separate completion flag.
+Completion means covering all the questions, not mastery or a graded review.
+Each chapter file has its own label. Combined folder/chapter totals and
+splitting chapters into section files are deferred together.
 
 ## Example with Spinning Up
 
@@ -164,13 +240,13 @@ An example question is: “In reinforcement learning, how does an agent's
 observation differ from the environment state?”
 
 The user reads the relevant explanation, returns to the focused question, and
-presses Enter. Its **✓ Studied** marker appears and focus advances. If the user
+presses Enter. Its label becomes Reviewed and the text cursor advances. If the user
 stops before covering value functions, the stored status distinguishes those
-unstudied questions from the covered ones. The review platform uses
-that information to distinguish initial study from recall. Even within one section, each question needs
+unstudied questions from the covered ones. A future review platform can use
+that information to exclude them. Even within one section, each question needs
 its own explicit study action.
 
-## State ownership
+## Study state ownership
 
 Markdown continues to own authored content: hierarchy, titles, questions,
 answers, and source references. SQLite owns study progress alongside
@@ -182,20 +258,88 @@ otherwise portable notes.
 
 Moving or renaming a question should retain its study progress through that
 identity. Newly generated questions with new identities begin unstudied even
-when inserted into a previously studied section. The initial implementation preserves study progress across edits;
-advanced changed-content policies remain deferred.
+when inserted into a previously studied section. Edits retain the studied mark
+and display **Content changed** when the current prompt/answer hash differs from the version marked studied. This is informational;
+no scheduling or eligibility policy is introduced. Toggling to Not studied and
+then Studied records the current version. Reverting exactly to the studied version
+clears the notice. Changes to source location or headings do not trigger it.
 
-## Delivery status and remaining decisions
+The service is the sole SQLite writer. The database is bound to its vault path;
+the plugin verifies the connected vault before reading or writing progress.
+Study writes check the question UUID, file, content hash, and previous study
+state, reject archived or invalid questions, and never create review events.
+Study state survives reconciliation, moves, archival, and service restarts.
+A rebuild means reconciliation of Markdown into the existing database, not
+deleting that database.
 
-Source preparation remains separate from study confirmation. Initial study in
-either interface persists by UUID; moving a question retains progress, while
-new UUIDs start unstudied. Existing imported questions start unstudied until the
-user marks them. Study marks can be corrected without deleting review history.
-The final question in an Obsidian study pass retains focus and its studied marker.
-The website advances to its queue-complete screen when no items remain.
+Progress is local to this computer. For backup, stop the service cleanly and
+copy the database at the path printed on startup to a separate backup location;
+restore it with the service stopped, then restart against the same vault.
+Do not copy a live WAL database or put the active database in iCloud. Losing
+the database loses progress; Markdown alone cannot restore it. Automatic backup,
+portable vault relocation and multi-device progress remain later work. The
+website now exports consistent SQLite backups including study and recall history.
 
-The initial milestone preserves progress and history across edits, shows changed
-content, and rejects study marks against stale content. More advanced policies
-for resetting or accelerating edited material remain deferred, as do automatic
-source-copy recognition and deadline planning. See the review workflow for
-backup/export and restore instructions.
+## Suggested delivery sequence
+
+### First milestone: source preparation
+
+The first deliverable is one preparation workflow from an agreed PDF or website
+scope to Recall Markdown ready for a collection. It should remove the separate
+step of generating a list and manually converting that list into questions.
+The agent skill supplies the source-reading and question-generation procedure;
+the writer supplies automatic identity, structural validation, and creation of
+notes in one source folder. Source access uses the agent's available reading
+tools. The writer validates every note before publishing the source's set;
+one note per chapter and appendix is the default for books. Inaccessible or
+unreliable extraction must be reported, not presented as completed coverage.
+A bounded Spinning Up draft is included for the pilot.
+
+Acceptance of this milestone would require:
+
+1. An initial Spinning Up pilot sample whose coverage and depth the user
+   validates before generation extends to the full agreed scope. This validates
+   the workflow during development; it is not a mandatory step for every user.
+2. Generated notes that satisfy the [required content checks](#required-question-content-checks)
+   and existing Markdown grammar, including titles, answers, and source
+   references, with identity generated and validated automatically.
+3. Writing only beneath a user-selected folder in an existing Recall
+   collection, with the source-history check, confirmation before copies,
+   automatic fresh identities, and no changes to existing notes or history.
+
+Preparation does not confirm that the user has studied the generated material.
+It must remain usable before study tracking or a review platform is available.
+
+### Subsequent milestones
+
+2. Implement the recorded Obsidian interaction and durable
+   per-question study state and the Enter/click interaction. This milestone
+   stores what has been studied without requiring a review platform.
+3. The local FSRS review milestone consumes the stored study status when selecting
+   questions, while preserving the documented stable-session behavior.
+
+First study extends the authoring and storage layers. The subsequent FSRS
+milestone adds website study and recall. Markdown edits remain outside its scope.
+
+## Decisions still needed
+
+- Whether future source preparation should recognize prior output
+  automatically instead of relying on the first version's user check.
+- Automatic backups and portable restoration to a relocated vault.
+
+Scheduling, grading, cross-file review order, and progressive answer reveal
+are governed by the accepted first-milestone decisions in [review workflow](review-workflow.md).
+
+## Local FSRS milestone
+
+The authorized [review workflow](review-workflow.md) extends the inspection and
+Obsidian study slice with a writable local practice website. Both interfaces use
+the existing `study_state` records; first study never manufactures a recall event.
+The website can mark initial study and correct study status, with content and
+revision checks. Obsidian reflects those changes through its existing inline
+controls and derived note completion. Markdown remains authored content only.
+
+FSRS state and event details are stored separately from study state. Durable
+session metadata tracks study/recall mode, captured progress revisions, and
+completion alongside immutable content snapshots. Grading and queue completion
+commit together. Deadline planning and neural scheduling remain deferred.

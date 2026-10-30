@@ -1,3 +1,5 @@
+import { studyApi } from "./study-api";
+import { openSourcePdf } from "./source-pdf";
 import { createReadStream } from "node:fs";
 import { stat, mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
@@ -6,6 +8,7 @@ import path from "node:path";
 import {
   ReviewStore,
   ReviewError,
+  StudyConflict,
   type RecallDatabase,
 } from "@recall/database";
 import type { RecallSynchronizer, SyncEvent } from "./synchronizer";
@@ -37,6 +40,7 @@ export function createRecallServer(options: {
   const notifyProgress = () => {
     for (const client of clients) client.write(`event: progress\ndata: {}\n\n`);
   };
+  const handleStudy = studyApi(database, synchronizer);
   let lastSyncEvent: SyncEvent | null = null;
 
   synchronizer.on("sync", (event: SyncEvent) => {
@@ -62,6 +66,11 @@ export function createRecallServer(options: {
         return;
       }
       const url = new URL(request.url ?? "/", `http://${host}`);
+      if (await handleStudy(request, response, url)) {
+        if (request.method === "POST" && response.statusCode === 200)
+          notifyProgress();
+        return;
+      }
       const readBody = async (): Promise<Record<string, unknown>> => {
         if (
           request.headers["x-recall-client"] !== "1" ||
@@ -91,7 +100,7 @@ export function createRecallServer(options: {
         });
         return;
       }
-      if (url.pathname === "/api/study" && request.method === "GET") {
+      if (url.pathname === "/api/review/study" && request.method === "GET") {
         const file = url.searchParams.get("file");
         json(response, {
           questions: reviews
@@ -100,18 +109,36 @@ export function createRecallServer(options: {
         });
         return;
       }
-      if (url.pathname === "/api/study" && request.method === "POST") {
+      if (url.pathname === "/api/review/study" && request.method === "POST") {
         const body = await readBody();
         if (
           typeof body.id !== "string" ||
           typeof body.contentHash !== "string" ||
-          typeof body.studied !== "boolean"
+          typeof body.studied !== "boolean" ||
+          !(
+            body.expectedRevision === null ||
+            typeof body.expectedRevision === "string"
+          )
         )
           throw new ReviewError("Invalid study mark.", 400);
+        const question = database.getQuestion(body.id);
+        if (
+          !question ||
+          !(await synchronizer.canStudy(
+            question.filePath,
+            body.id,
+            body.contentHash,
+          ))
+        )
+          throw new ReviewError(
+            "Note changed or has not synchronized. Refresh and retry.",
+          );
         const result = reviews.markStudied(
           body.id,
           body.contentHash,
           body.studied,
+          new Date(),
+          body.expectedRevision as string | null,
         );
         notifyProgress();
         json(response, result);
@@ -156,6 +183,24 @@ export function createRecallServer(options: {
           typeof body.action !== "string"
         )
           throw new ReviewError("Invalid review action.", 400);
+        if (body.action === "studied") {
+          const item = reviews.session(sessionMatch[1]!).items[
+            Number(body.position)
+          ];
+          if (
+            item &&
+            !item.completedAt &&
+            (!item.filePath ||
+              !(await synchronizer.canStudy(
+                item.filePath,
+                item.questionId,
+                item.contentHash,
+              )))
+          )
+            throw new ReviewError(
+              "Note changed or has not synchronized. Refresh and retry.",
+            );
+        }
         const result = reviews.act(
           sessionMatch[1]!,
           Number(body.position),
@@ -219,7 +264,7 @@ export function createRecallServer(options: {
             })
             .map((q) => ({
               ...q,
-              studiedAt: reviews.progress(q.id).studiedAt,
+              ...reviews.progress(q.id),
             })),
           revision: database.revision(),
         });
@@ -228,6 +273,38 @@ export function createRecallServer(options: {
       if (request.method === "POST" && url.pathname === "/api/rescan") {
         synchronizer.requestFullReconcile();
         json(response, { accepted: true, revision: database.revision() }, 202);
+        return;
+      }
+      const pdfRoute = /^\/api\/questions\/([^/]+)\/source-pdf$/.exec(
+        url.pathname,
+      );
+      if (request.method === "GET" && pdfRoute) {
+        const question = database.getQuestion(pdfRoute[1]!);
+        try {
+          const file =
+            question &&
+            (await openSourcePdf(
+              question.answer,
+              url.searchParams.get("source") ?? "",
+            ));
+          if (file) {
+            response.writeHead(200, {
+              "content-type": "application/pdf",
+              "content-length": (await file.stat()).size,
+              "content-disposition": "inline",
+              "cache-control": "no-store",
+              "x-content-type-options": "nosniff",
+            });
+            const stream = file.createReadStream({ start: 0 });
+            stream.on("error", () => response.destroy());
+            response.on("close", () => stream.destroy());
+            stream.pipe(response);
+            return;
+          }
+        } catch {
+          // Keep unavailable sources local and avoid exposing filesystem errors.
+        }
+        json(response, { error: "PDF source unavailable." }, 404);
         return;
       }
       if (
@@ -281,7 +358,11 @@ export function createRecallServer(options: {
       json(
         response,
         { error: error instanceof Error ? error.message : "Request failed." },
-        error instanceof ReviewError ? error.status : 500,
+        error instanceof ReviewError
+          ? error.status
+          : error instanceof StudyConflict
+            ? 409
+            : 500,
       );
     }
   });

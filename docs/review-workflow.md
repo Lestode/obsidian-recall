@@ -7,9 +7,9 @@ RWKV are deferred. This document governs the implementation defaults below.
 ## Study and recall
 
 Obsidian owns authored Markdown. SQLite owns study status and recall history.
-First study is available in an Obsidian study panel and on the local website.
+First study is available through Obsidian inline study controls and on the local website.
 Only an explicit Enter/click action marks the focused question studied, displays
-**✓ Studied**, and advances focus. Opening or revealing content does not count.
+the updated study label, and advances focus when marking studied. Opening or revealing content does not count.
 The two interfaces read the same database through the local service. No progress
 syntax is written to Markdown. Study status survives moves, reindexing, and restart.
 Existing questions without study records start unstudied; legacy review history
@@ -63,8 +63,10 @@ twice: stale attempts are rejected, and exact request retries are idempotent.
 
 ## Persistence and access
 
-The service remains the only SQLite writer. Study/recall mutations are atomic.
-Progress updates notify browser clients; the Obsidian panel refreshes periodically.
+The service remains the only SQLite writer. Study/recall mutations are atomic. Both interfaces use `study_state`, including
+revision checks to reject stale study writes. Website study confirmation checks
+the current note on disk using the same safeguards as the plugin.
+Progress updates notify browser clients; Obsidian inline controls refresh periodically.
 The service is loopback-only. Writes require JSON and a Recall-specific header;
 foreign browser origins and non-loopback Host values are rejected.
 

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@recall/core": "0.2.0",
-    "@recall/database": "0.2.0"
+    "@recall/database": "0.2.0",
+    "marked": "^16.0.0"
   }
 }
