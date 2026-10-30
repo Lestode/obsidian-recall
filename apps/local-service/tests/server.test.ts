@@ -1,3 +1,4 @@
+import { once } from "node:events";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
@@ -59,8 +60,10 @@ test("loopback API exposes status, targeted questions, rescan, and inspector ass
       [question.id],
     );
 
+    const synchronized = once(synchronizer, "sync");
     const rescan = await fetch(`${origin}/api/rescan`, { method: "POST" });
     assert.equal(rescan.status, 202);
+    await synchronized;
     assert.equal((await fetch(`${origin}/app.js`)).status, 200);
   } finally {
     synchronizer.stop();
