@@ -10,6 +10,12 @@ export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
     lastMessage = "",
     projects = [],
     plans = [];
+  document.addEventListener('pointerdown', event => {
+    root.querySelectorAll('.project-settings[open]').forEach(menu => { if (!menu.contains(event.target)) menu.open = false; });
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') root.querySelectorAll('.project-settings[open]').forEach(menu => { menu.open = false; menu.querySelector('summary').focus(); });
+  });
   let includeUnseen = localStorage.getItem("recall.includeUnseen") !== "false";
   const api = async (path, body) => {
     const response = await fetch(
@@ -83,13 +89,17 @@ export function initPractice({ renderMarkdown, escapeHtml: esc, events }) {
           const relative = p.folderPath.startsWith(p.collectionPath + "/")
             ? p.folderPath.slice(p.collectionPath.length + 1)
             : p.label;
-          return `<tr class="${collection ? "collection-row" : "folder-row"}"><th scope="row"><span class="project-name">${esc(collection ? p.label : relative)}</span>${plan ? `<span class="project-deadline">Target: ${esc(plan.targetDate)} · ${Math.round(plan.retention * 100)}% recall threshold${p.planToday ? ` · ${p.planToday.introductions} unseen left today` : " · expired"}</span>` : ""}${collection ? '<span class="project-kind">Collection</span>' : `<span class="project-kind">${esc(p.collectionPath)}</span>`}</th><td>${p.planToday?.reviews ?? p.due + p.ready}</td><td>${p.unseen}</td><td class="total-column">${p.total}</td><td class="project-actions"><button data-plan="${i}" aria-label="Plan ${esc(p.label)}">${plan ? "Edit date" : "Set date"}</button><button data-start="${i}" aria-label="Review ${esc(p.label)}">Review</button></td></tr>`;
+          return `<tr class="${collection ? "collection-row" : "folder-row"}"><th scope="row"><span class="project-name">${esc(collection ? p.label : relative)}</span>${plan ? `<span class="project-deadline">Target: ${esc(plan.targetDate)} · ${Math.round(plan.retention * 100)}% recall threshold${p.planToday ? ` · ${p.planToday.introductions} unseen left today` : " · expired"}</span>` : ""}${collection ? '<span class="project-kind">Collection</span>' : `<span class="project-kind">${esc(p.collectionPath)}</span>`}</th><td>${p.planToday?.reviews ?? p.due + p.ready}</td><td>${p.unseen}</td><td class="total-column">${p.total}</td><td class="project-actions"><button data-start="${i}" aria-label="Review ${esc(p.label)}">Review</button><details class="project-settings"><summary aria-label="Settings for ${esc(p.label)}" title="Project settings"><span aria-hidden="true">⋯</span></summary><div class="project-settings-menu"><button data-plan="${i}">Target date…</button></div></details></td></tr>`;
         })
         .join(
           "",
         )}</tbody></table>${projects.length ? "" : '<p class="empty">No indexed collections.</p>'}</div>`;
+    root.querySelectorAll('.project-settings').forEach(menu => menu.addEventListener('toggle', () => {
+      if (menu.open) root.querySelectorAll('.project-settings[open]').forEach(other => { if (other !== menu) other.open = false; });
+    }));
     root.querySelectorAll("[data-plan]").forEach((button) =>
       button.addEventListener("click", () => {
+        button.closest("details").open = false;
         openPlan(projects[Number(button.dataset.plan)], plans, api, esc, home);
       }),
     );

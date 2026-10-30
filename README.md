@@ -64,7 +64,7 @@ Reviewed / Not reviewed label, or press Enter with the cursor on a question.
 The website and Obsidian share the same study state. Configure a nondefault
 service port in plugin settings; the plugin verifies the connected vault.
 
-Use **Set date** next to a project or folder to preview a deadline plan before
+Use the **⋯** settings menu → **Target date…** for a project or folder to preview a deadline plan before
 saving. The preview shows daily introductions and recall attempts under two
 illustrative scenarios, with the number still below target at the deadline.
 The default threshold is 90% predicted successful recall, alongside Good/Easy

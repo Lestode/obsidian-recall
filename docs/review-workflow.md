@@ -99,7 +99,8 @@ References: [Anki ratings](https://docs.ankiweb.net/manual/studying#answer-butto
 ## Target-date planning
 
 Target-date planning is now authorized. Each collection/folder can save an optional
-calendar date and a recall-probability threshold (default 90%, adjustable 80–97%).
+calendar date through its **⋯** settings menu → **Target date…**. Review remains
+the primary row action. Planning includes a recall-probability threshold (default 90%, adjustable 80–97%).
 The criterion is at least one Good/Easy on the current content after any later
 Again, plus FSRS-predicted successful recall at the target date above the threshold.
 This is not a probability of a Good rating or a guarantee of mastery.
