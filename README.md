@@ -16,23 +16,24 @@ The current implementation contains:
 - Stable database snapshots for future review sessions.
 - Obsidian study controls with durable progress, explicit undo, and changed-content notices.
 - Incremental, debounced reconciliation of changed Markdown files.
-- A read-only local web inspector with rendered Markdown and math, diagnostics,
+- A local library with rendered Markdown and math, diagnostics,
   archive visibility, source hierarchy, and targeted live updates.
 - Agent-driven PDF/website preparation into a new Recall note with automatic
   identity and parser validation.
 
-Scheduling, grading, and the interactive review workflow remain intentionally
-unimplemented until their product decisions are resolved.
+The first interactive milestone adds shared study progress, a project/folder
+practice dashboard, progress-based queues, and FSRS recall scheduling with
+Again / Hard / Good / Easy ratings. Deadline forecasting and RWKV are deferred.
 
 ## Repository layout
 
 ```text
 apps/obsidian-plugin  Obsidian authoring extension
 apps/local-service    Vault watcher, SQLite owner, and local HTTP API
-apps/review-web       Read-only collection inspector
+apps/review-web       Practice dashboard, review sessions, and library
 packages/core         Shared Markdown parser and source-context logic
 packages/database     SQLite schema and reconciliation
-packages/scheduler    Reserved boundary for the unresolved scheduling policy
+packages/scheduler    Pinned FSRS-6 scheduler
 ```
 
 ## Development
@@ -52,7 +53,30 @@ Run the local inspector against a vault with:
 npm run start -- --vault "/absolute/path/to/vault"
 ```
 
-Then open `http://127.0.0.1:45871`.
+Then open `http://127.0.0.1:45871`. Choose a project and **Review**.
+Unseen material is included by default. Study it and press **Studied**; on recall
+items reveal the answer, then use **1–4** to assess your attempt. **Projects**
+leaves the queue; **Review** loads what needs practice now from saved progress. **Library** allows study-status corrections.
+
+In Obsidian, install the rebuilt plugin files and start the same local service.
+Study controls appear inline in Live Preview and Reading view. Click the
+Reviewed / Not reviewed label, or press Enter with the cursor on a question.
+The website and Obsidian share the same study state. Configure a nondefault
+service port in plugin settings; the plugin verifies the connected vault.
+
+Use the **⋯** settings menu → **Target date…** for a project or folder to preview a deadline plan before
+saving. The preview shows daily introductions and recall attempts under two
+illustrative scenarios, with the number still below target at the deadline.
+The default threshold is 90% predicted successful recall, alongside Good/Easy
+evidence for every question. Edit the date, threshold, or introduction rate at
+any time; saved plans guide Review without resetting history. Time estimates
+are not shown until reliable duration data is available.
+
+Use **Export database** to save a consistent backup of progress and history.
+For restore, stop the service first, retain the old database, replace it with
+the backup, remove obsolete `-wal` and `-shm` sidecars, and restart against the
+same vault. See [the review workflow](docs/review-workflow.md) for policy and
+implementation boundaries. The live database must remain outside synced folders.
 
 ## Prepare questions from a source
 

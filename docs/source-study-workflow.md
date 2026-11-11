@@ -2,7 +2,7 @@
 
 Status: first implementation of agent-driven source preparation, with an
 initial pilot awaiting content review. Per-question first-study controls are
-implemented in Obsidian under the decisions below. Review delivery is a later phase. The web inspector remains read-only.
+implemented in Obsidian under the decisions below. The local website now delivers FSRS recall under [review workflow](review-workflow.md).
 
 The workflow should let someone provide a PDF or a learning website, receive
 structured Recall notes, study them at their own pace, and store which questions
@@ -23,7 +23,7 @@ platform; storing study progress must be useful before one exists.
    can later be used by a review platform.
 
 Question preparation can happen ahead of learning. Practising questions and
-selecting review sessions come later; that future platform should use the
+selecting review sessions now use the shared study state; the platform uses the
 stored study status to exclude unstudied questions.
 
 ## Preparing questions from a source
@@ -161,10 +161,10 @@ practice. A studied question may also have no recall attempts yet, so study
 status must remain distinct from review history.
 
 Recording study status must not depend on creating a review session, recording
-a graded attempt, or having a scheduler. Later, it will supply a prerequisite
-for question selection. It does not decide when a question is due, how an
+a graded attempt, or having a scheduler. It supplies a prerequisite
+for recall selection. It does not decide when a question is due, how an
 attempt is graded, or which eligible question appears next. Those policies
-remain unresolved in the
+are defined for the first milestone in the
 [review workflow](review-workflow.md).
 
 ## Agreed study interaction
@@ -277,7 +277,8 @@ copy the database at the path printed on startup to a separate backup location;
 restore it with the service stopped, then restart against the same vault.
 Do not copy a live WAL database or put the active database in iCloud. Losing
 the database loses progress; Markdown alone cannot restore it. Automatic backup,
-portable vault relocation, export, and multi-device progress remain later work.
+portable vault relocation and multi-device progress remain later work. The
+website now exports consistent SQLite backups including study and recall history.
 
 ## Suggested delivery sequence
 
@@ -314,19 +315,31 @@ It must remain usable before study tracking or a review platform is available.
 2. Implement the recorded Obsidian interaction and durable
    per-question study state and the Enter/click interaction. This milestone
    stores what has been studied without requiring a review platform.
-3. In a later review phase, consume the stored study status when selecting
+3. The local FSRS review milestone consumes the stored study status when selecting
    questions, while preserving the documented stable-session behavior.
 
-First study extends the authoring and storage layers. The web inspector stays
-read-only; grading, scheduling, and Markdown edits from the web interface remain
-outside this milestone.
+First study extends the authoring and storage layers. The subsequent FSRS
+milestone adds website study and recall. Markdown edits remain outside its scope.
 
 ## Decisions still needed
 
 - Whether future source preparation should recognize prior output
   automatically instead of relying on the first version's user check.
-- Automatic backups, portable restoration to a relocated vault, and export
-  of study progress alongside review history.
+- Automatic backups and portable restoration to a relocated vault.
 
 Scheduling, grading, cross-file review order, and progressive answer reveal
-remain governed by their existing unresolved decisions.
+are governed by the accepted first-milestone decisions in [review workflow](review-workflow.md).
+
+## Local FSRS milestone
+
+The authorized [review workflow](review-workflow.md) extends the inspection and
+Obsidian study slice with a writable local practice website. Both interfaces use
+the existing `study_state` records; first study never manufactures a recall event.
+The website can mark initial study and correct study status, with content and
+revision checks. Obsidian reflects those changes through its existing inline
+controls and derived note completion. Markdown remains authored content only.
+
+FSRS state and event details are stored separately from study state. Durable
+session metadata tracks study/recall mode, captured progress revisions, and
+completion alongside immutable content snapshots. Grading and queue completion
+commit together. Target-date planning is specified in the review workflow; neural scheduling remains deferred.
